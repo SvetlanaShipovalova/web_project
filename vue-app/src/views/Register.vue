@@ -1,6 +1,19 @@
 <template>
-  <div class="container d-flex justify-content-center align-items-center min-vh-100">
-    <div class="card p-4 shadow-lg" style="max-width: 400px; width: 100%;">
+  <nav class="navbar navbar-expand-lg navbar-dark bg-dark">
+    <div class="container">
+      <text class="navbar-brand" >Когнитивные тесты</text>
+      <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
+        <span class="navbar-toggler-icon"></span>
+      </button>
+      <div class="collapse navbar-collapse" id="navbarNav">
+        <ul class="navbar-nav ms-auto">
+        </ul>
+      </div>
+    </div>
+  </nav>
+
+  <div class="container d-flex justify-content-center align-items-center min-vh-100" style="margin-top: -80px;">
+    <div class="card p-4 shadow-lg" style="max-width: 400px; width: 100%; height: 450px">
       <h2 class="text-center">Регистрация</h2>
       <form @submit.prevent="register">
         <div class="mb-3">

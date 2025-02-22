@@ -1,7 +1,10 @@
 <template>
   <Navbar />
   <div class="container mt-5">
-    <h2 class="text-center mb-4">Выберите тест</h2>
+    <div class="container mt-5 text-center">
+      <h1>Добро пожаловать!</h1>
+      <p>Здесь вы можете пройти когнитивные тесты.</p>
+    </div>
 
 
     <div class="row row-cols-1 row-cols-md-3 g-4">

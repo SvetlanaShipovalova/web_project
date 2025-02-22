@@ -1,7 +1,7 @@
 <template>
   <Navbar />
   <div class="container mt-5">
-    <div class="card p-4 shadow-lg">
+    <div class="card p-4 shadow-lg mx-5">
       <h2 class="text-center mb-4">Введите информацию о себе</h2>
 
 
