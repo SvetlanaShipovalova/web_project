@@ -1,0 +1,42 @@
+body {
+    background-color: #f8f9fa;
+}
+
+
+.container {
+    max-width: 900px;
+}
+
+
+.card {
+    border-radius: 10px;
+    transition: 0.3s;
+}
+
+
+.card:hover {
+    transform: scale(1.02);
+}
+
+
+.btn-primary, .btn-success, .btn-danger {
+    border-radius: 20px;
+    font-weight: bold;
+}
+
+
+.navbar {
+    border-bottom: 2px solid #007bff;
+}
+
+
+.nav-link {
+    font-size: 1.1rem;
+}
+
+
+.navbar-brand {
+    font-weight: bold;
+    font-size: 1.3rem;
+}
+
