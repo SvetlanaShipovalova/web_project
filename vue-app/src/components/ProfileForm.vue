@@ -26,7 +26,7 @@
         </div>
 
 
-        <!-- Базовое образование -->
+        <!-- Образование -->
         <div class="mb-3">
           <label class="form-label">Базовое образование</label>
           <select v-model="form.education" class="form-select" :disabled="!isEditing">
