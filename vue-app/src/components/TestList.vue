@@ -13,7 +13,7 @@
           <div class="card-body d-flex flex-column">
             <h5 class="card-title">{{ test.name }}</h5>
             <p class="card-text flex-grow-1">{{ test.description }}</p>
-            <router-link :to="'/test/' + test.id" class="btn btn-primary mt-auto w-100">Начать</router-link>
+            <router-link :to="'/test/' + test.id" class="btn btn-primary mt-auto w-100">Начать тест</router-link>
           </div>
         </div>
       </div>
