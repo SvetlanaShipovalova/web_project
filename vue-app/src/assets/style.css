@@ -5,8 +5,9 @@ body {
 .container {
     max-width: 900px;
 }
-
-
+.nav-link{
+    padding-top: 17px;
+}
 .card {
     border-radius: 10px;
 }
