@@ -3,32 +3,35 @@
   <div class="container mt-5 text-center">
     <h2>Тест №{{ $route.params.id }}</h2>
     <div id="app">
-  <div class="container">
-    <h2>Тест на внимание «Мюнстерберга»</h2>
-    <button v-if="!testStarted" class="start-button" @click="startTest">
-      Играть
-    </button>
-    <div v-else>
-      <p class="random-text" v-html="randomText"></p>
-      <button class="check-button" @click="checkWords">Проверить количество найденных слов</button>
-      
-      <div v-if="foundCount !== null" class="quiz">
-        <h2>Сколько слов было найдено?</h2>
-        <div v-for="option in options" :key="option" class="option">
-          <button @click="checkAnswer(option)">{{ option }}</button>
-        </div>
-        <p v-if="selectedOption !== null" class="feedback">
-          {{ feedback }}
-        </p>
-      </div>
-      <p v-if="isAnswered && feedback === 'Правильно!'" class="success-message">
-        Вы нашли {{ foundCount }} слов(а).
-      </p>
-      <button v-if="isAnswered && feedback === 'Правильно!'" class="retry-button" @click="retryTest">
-        Пройти тест еще раз
-      </button>
-      <br><router-link to="/tests" class="btn btn-secondary">Назад к тестам</router-link>
+  <div>
+    <div v-if="!gameStarted">
+      <h2>Тест на зрительно-моторную координацию</h2>
+      <p>В каждом раунде ты увидишь два шарика. Шарики будут двигаться вдоль своей оси,
+        <br> и твоя цель - заставить их остановиться как можно ближе к пересечению линий.</p>
+      <button @click="startGame" class="start-button">Начать игру</button>
     </div>
+    <div v-else>
+      <div class="game-container" @click="stopNextBall">
+        <div class="line vertical"></div>
+        <div class="line horizontal"></div>
+        <div
+            v-for="(ball, index) in balls"
+            :key="index"
+            class="ball"
+            :style="{
+            left: ball.x + 'px',
+            top: ball.y + 'px',
+            backgroundColor: ball.color
+          }"
+        ></div>
+        <div class="score">Score: {{ score }}</div>
+        <div class="level">Level: {{ level }}</div>
+      </div>
+      <div class="result" v-if="resultMessage">{{ resultMessage }}</div>
+      <div class="final-result" v-if="finalMessage">{{ finalMessage }}</div>
+      <button v-if="finalMessage" @click="restartGame" class="restart-button">Начать заново</button>
+    </div>
+    <br> <router-link to="/tests" class="btn btn-secondary">Назад к тестам</router-link>
   </div>
     </div>
   </div>
@@ -41,114 +44,208 @@ export default {
   components: {Navbar},
   data() {
     return {
-      words: [
-        'ФАКТ', 'ТЕОРИЯ', 'БИЗНЕС', 'ДОЧИСЛО', 'КАРТЕ', 
-        'МАРКЕТИНГ', 'ДАННЫЕ', 'ДЕНЬГИ', 'КЛЮЧ', 'КУСТ',
-        'АНАЛИЗ', 'ДИАГНОЗ', 'ПРОБЛЕМА', 'РЕШЕНИЕ', 'ПЛАН',
-        'КОНЦЕПЦИЯ', 'СТРАТЕГИЯ', 'МОДЕЛЬ', 'ИССЛЕДОВАНИЕ', 'РЕСУРС',
-        'ИНФОРМАЦИЯ', 'ПРОЦЕСС', 'СИСТЕМА', 'КОММУНИКАЦИЯ', 'ПАРТНЁР',
-        'ПРОЕКТ', 'УСПЕХ', 'ДИАЛОГ', 'КОНТРОЛЬ', 'ОЦЕНКА'
+      gameStarted: false,
+      balls: [
+        { x: 140, y: 0, color: this.getRandomColor(), moving: true, direction: 'down' },
+        { x: 0, y: 140, color: this.getRandomColor(), moving: true, direction: 'right' },
       ],
-      randomText: '',
-      foundCount: null,
-      options: [],
-      selectedOption: null,
-      feedback: '',
-      isAnswered: false,
-      testStarted: false, 
+      score: 0,
+      speed: 2,
+      interval: null,
+      nextBallIndex: 0,
+      resultMessage: '',
+      finalMessage: '',
+      level: 1,
     };
   },
   methods: {
-    startTest() {
-      this.testStarted = true; 
-      this.generateRandomText(); 
+    startGame() {
+      this.gameStarted = true;
+      this.score = 0;
+      this.level = 1;
+      this.speed = 2;
+      this.balls.forEach((ball, index) => {
+        ball.x = index === 0 ? 140 : 0;
+        ball.y = index === 0 ? 0 : 140;
+        ball.moving = true;
+      });
+      this.nextBallIndex = 0;
+      this.resultMessage = '';
+      this.finalMessage = '';
+      this.startInterval();
     },
-    generateRandomText() {
-      let text = '';
-      const minLength = 350; 
-      const usedWords = new Set(); 
+    startInterval() {
+      this.interval = setInterval(() => {
+        this.moveBalls();
+      }, 50);
+    },
+    moveBalls() {
+      this.balls.forEach((ball) => {
+        if (ball.moving) {
+          if (ball.direction === 'down') {
+            ball.y += this.speed;
+            if (ball.y > 300) {
+              ball.y = 0;
+            }
+          } else if (ball.direction === 'up') {
+            ball.y -= this.speed;
+            if (ball.y < 0) {
+              ball.y = 300;
+            }
+          }
+          if (ball.direction === 'right') {
+            ball.x += this.speed;
+            if (ball.x > 300) {
+              ball.x = 0;
+            }
+          } else if (ball.direction === 'left') {
+            ball.x -= this.speed;
+            if (ball.x < 0) {
+              ball.x = 300;
+            }
+          }
+        }
+      });
+    },
+    stopNextBall() {
+      if (this.nextBallIndex < this.balls.length) {
+        const ball = this.balls[this.nextBallIndex];
+        ball.moving = false;
+        this.calculateScore();
+        this.nextBallIndex++;
 
-      while (text.length < minLength) {
-        if (usedWords.size === this.words.length) {
-          break;
-        }
-        const randomWord = this.words[Math.floor(Math.random() * this.words.length)];
-        if (!usedWords.has(randomWord)) {
-          usedWords.add(randomWord); 
-          const randomPosition = Math.floor(Math.random() * (text.length + 1)); 
-          text = this.insertWord(randomWord, text, randomPosition);
+        if (this.nextBallIndex === this.balls.length) {
+          this.displayResult();
+          this.nextLevel();
         }
       }
-      while (text.length < minLength) {
-        text += ' '; 
-      }
-      this.randomText = text.trim(); 
     },
-    insertWord(word, currentText, position) {
-      return currentText.slice(0, position) + word + currentText.slice(position);
+    calculateScore() {
+      const centerX = 140;
+      const centerY = 140;
+
+      this.balls.forEach((ball) => {
+        const distance = Math.sqrt(
+            (ball.x - centerX) ** 2 + (ball.y - centerY) ** 2
+        );
+        this.score += Math.max(0, 100 - distance);
+      });
     },
-    checkWords() {
-      const regex = new RegExp(this.words.join('|'), 'g'); 
-      this.foundCount = (this.randomText.match(regex) || []).length; 
-      this.generateOptions(); 
-    },
-    generateOptions() {
-      const correctAnswer = this.foundCount;
-      const optionsSet = new Set([correctAnswer]);
-      while (optionsSet.size < 4) {
-        const randomOption = Math.floor(Math.random() * (this.words.length + 1)); 
-        optionsSet.add(randomOption);
-      }
-      this.options = Array.from(optionsSet).sort((a, b) => a - b);
-    },
-    checkAnswer(option) {
-      this.selectedOption = option;
-      if (option === this.foundCount) {
-        this.feedback = 'Правильно!';
+    displayResult() {
+      if (this.score > 1100) {
+        this.resultMessage = 'Отличный уровень координации';
+      } else if (this.score >= 1000) {
+        this.resultMessage = 'Средний уровень координации';
       } else {
-        this.feedback = 'Попробуйте снова, неверно.'; 
+        this.resultMessage = 'Нуждается в улучшении';
       }
-      this.isAnswered = true; 
     },
-    retryTest() {
-      this.isAnswered = false; 
-      this.selectedOption = null; 
-      this.feedback = ''; 
-      this.foundCount = null; 
-      this.options = []; 
-      this.randomText = ''; 
-      this.testStarted = false; 
-    }
-  }
+    nextLevel() {
+      if (this.level < 3) {
+        this.level++;
+        this.speed += 1;
+        this.resetGame();
+      } else {
+        this.finalMessage = "Игра завершена! Ваш финальный счет: " + this.score;
+        clearInterval(this.interval);
+      }
+    },
+    resetGame() {
+      this.balls.forEach((ball, index) => {
+        ball.x = index === 0 ? 140 : 0;
+        ball.y = index === 0 ? 0 : 140;
+        ball.moving = true;
+      });
+      this.nextBallIndex = 0;
+      this.resultMessage = '';
+    },
+    restartGame() {
+      this.startGame();
+    },
+    getRandomColor() {
+      const letters = '0123456789ABCDEF';
+      let color = '#';
+      for (let i = 0; i < 6; i++) {
+        color += letters[Math.floor(Math.random() * 16)];
+      }
+      return color;
+    },
+  },
+  mounted() {
+  },
+  beforeUnmount() {
+    clearInterval(this.interval);
+  },
 };
 </script>
 
-<style>
-.random-text {
-  margin-left: 10%;
-  margin-right: 10%;
-  font-size: 18px;
-  padding: 15px;
-  border: 1px dashed #ccc;
-  border-radius: 5px;
-  background-color: #fafafa;
-  overflow-wrap: break-word;
+<style scoped>
+.game-container {
+  position: relative;
+  width: 300px;
+  height: 300px;
+  margin: auto;
+  background-color: #f0f0f0;
+  overflow: hidden;
 }
-.quiz {
-  margin-top: 20px;
+
+.line {
+  position: absolute;
+  background-color: #000;
 }
-.option {
-  margin: 5px 0;
-  display: inline-block;
+
+.vertical {
+  width: 2px;
+  height: 100%;
+  left: 50%;
+  top: 0;
+  transform: translateX(-50%);
 }
-.feedback {
-  font-size: 18px;
-  margin-top: 10px;
+
+.horizontal {
+  height: 2px;
+  width: 100%;
+  top: 50%;
+  left: 0;
+  transform: translateY(-50%);
+}
+
+.ball {
+  position: absolute;
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  cursor: pointer;
+}
+
+.score {
+  position: absolute;
+  top: 10px;
+  left: 10px;
+  font-size: 24px;
   color: #333;
-  font-weight: bold;
 }
-.success-message {
+
+.level {
+  position: absolute;
+  top: 40px;
+  left: 10px;
+  font-size: 24px;
+  color: #333;
+}
+
+.result {
+  margin-top: 10px;
+  text-align: center;
   font-size: 20px;
-  color: #4CAF50;
+  color: #333;
 }
+
+.final-result {
+  margin-top: 5px;
+  text-align: center;
+  font-size: 20px;
+  color: #333;
+}
+
 </style>

@@ -3,33 +3,20 @@
   <div class="container mt-5 text-center">
     <h2>Тест №{{ $route.params.id }}</h2>
     <div id="app">
-  <div>
-    <div v-if="!gameStarted">
-      <h2>Тест на зрительно-моторную координацию</h2>
-      <p>В каждом раунде ты увидишь два шарика. Шарики будут двигаться вдоль своей оси,
-        <br> и твоя цель - заставить их остановиться как можно ближе к пересечению линий.</p>
-      <button @click="startGame" class="start-button">Начать игру</button>
-    </div>
-    <div v-else>
-      <div class="game-container" @click="stopNextBall">
-        <div class="line vertical"></div>
-        <div class="line horizontal"></div>
-        <div
-            v-for="(ball, index) in balls"
-            :key="index"
-            class="ball"
-            :style="{
-            left: ball.x + 'px',
-            top: ball.y + 'px',
-            backgroundColor: ball.color
-          }"
-        ></div>
-        <div class="score">Score: {{ score }}</div>
-        <div class="level">Level: {{ level }}</div>
+  <div class="image-checker">
+    <h2>Найдите неточность на картинке</h2>
+    <button v-if="!gameStarted" @click="startGame">Начать игру</button>
+    <div v-if="gameStarted">
+      <div class="image-container-wrapper">
+        <div v-for="(image, index) in images" :key="index" class="image-container">
+          <img :src="image.src" @click="checkSpot(index, $event)" />
+          <div v-if="highlightedSpots[index]" class="highlight" :style="highlightedSpots[index].style"></div>
+        </div>
       </div>
-      <div class="result" v-if="resultMessage">{{ resultMessage }}</div>
-      <div class="final-result" v-if="finalMessage">{{ finalMessage }}</div>
-      <button v-if="finalMessage" @click="restartGame" class="restart-button">Начать заново</button>
+      <p v-if="!gameEnded">{{ timer }} секунд осталось</p> <!-- Таймер выводится только если игра не закончена -->
+      <p v-if="gameEnded">Игра окончена!</p>
+      <p v-if="gameEnded">Вы нашли {{ foundSpots }} из {{ totalSpots }} отличий.</p>
+      <button v-if="gameEnded" @click="startGame">Начать заново</button>
     </div>
     <br> <router-link to="/tests" class="btn btn-secondary">Назад к тестам</router-link>
   </div>
@@ -39,213 +26,128 @@
 
 <script>
 import Navbar from "../view/Navbar.vue";
+import img_1 from '../assets/test_res/img_1.png';
+import img_2 from '../assets/test_res/img_2.png';
+import img_3 from '../assets/test_res/img_3.png';
+import img_4 from '../assets/test_res/img_4.png';
+import img_5 from '../assets/test_res/img_5.png';
+import img_6 from '../assets/test_res/img_6.png';
+import img_7 from '../assets/test_res/img_7.png';
+import img_8 from '../assets/test_res/img_8.png';
 
 export default {
   components: {Navbar},
   data() {
     return {
-      gameStarted: false,
-      balls: [
-        { x: 140, y: 0, color: this.getRandomColor(), moving: true, direction: 'down' },
-        { x: 0, y: 140, color: this.getRandomColor(), moving: true, direction: 'right' },
+      images: [
+        { src: img_1, correctSpot: { x: 218, y: 138 } },
+        { src: img_2, correctSpot: { x: 60, y: 25 } },
+        { src: img_3, correctSpot: { x: 245, y: 60 } },
+        { src: img_4, correctSpot: { x: 150, y: 80 } },
+        { src: img_5, correctSpot: { x: 100, y: 155 } },
+        { src: img_6, correctSpot: { x: 240, y: 90 } },
+        { src: img_7, correctSpot: { x: 25, y: 70 } },
+        { src: img_8, correctSpot: { x: 260, y: 135 } },
+
       ],
-      score: 0,
-      speed: 2,
-      interval: null,
-      nextBallIndex: 0,
-      resultMessage: '',
-      finalMessage: '',
-      level: 1,
+      highlightedSpots: {},
+      gameEnded: false,
+      gameStarted: false,
+      timer: 60,
+      totalSpots: 8,
+      foundSpots: 0,
     };
   },
   methods: {
     startGame() {
       this.gameStarted = true;
-      this.score = 0;
-      this.level = 1;
-      this.speed = 2;
-      this.balls.forEach((ball, index) => {
-        ball.x = index === 0 ? 140 : 0;
-        ball.y = index === 0 ? 0 : 140;
-        ball.moving = true;
-      });
-      this.nextBallIndex = 0;
-      this.resultMessage = '';
-      this.finalMessage = '';
-      this.startInterval();
+      this.gameEnded = false;
+      this.timer = 60;
+      this.highlightedSpots = {};
+      this.foundSpots = 0;
+      this.startTimer();
     },
-    startInterval() {
-      this.interval = setInterval(() => {
-        this.moveBalls();
-      }, 50);
-    },
-    moveBalls() {
-      this.balls.forEach((ball) => {
-        if (ball.moving) {
-          if (ball.direction === 'down') {
-            ball.y += this.speed;
-            if (ball.y > 300) {
-              ball.y = 0;
-            }
-          } else if (ball.direction === 'up') {
-            ball.y -= this.speed;
-            if (ball.y < 0) {
-              ball.y = 300;
-            }
-          }
-          if (ball.direction === 'right') {
-            ball.x += this.speed;
-            if (ball.x > 300) {
-              ball.x = 0;
-            }
-          } else if (ball.direction === 'left') {
-            ball.x -= this.speed;
-            if (ball.x < 0) {
-              ball.x = 300;
-            }
-          }
-        }
-      });
-    },
-    stopNextBall() {
-      if (this.nextBallIndex < this.balls.length) {
-        const ball = this.balls[this.nextBallIndex];
-        ball.moving = false;
-        this.calculateScore();
-        this.nextBallIndex++;
+    checkSpot(index, event) {
+      const rect = event.target.getBoundingClientRect();
+      const clickX = event.clientX - rect.left;
+      const clickY = event.clientY - rect.top;
 
-        if (this.nextBallIndex === this.balls.length) {
-          this.displayResult();
-          this.nextLevel();
+      const correctSpot = this.images[index].correctSpot;
+      const errorMargin = 20; // зона, где клик считается корректным
+
+      if (
+          clickX >= correctSpot.x - errorMargin &&
+          clickX <= correctSpot.x + errorMargin &&
+          clickY >= correctSpot.y - errorMargin &&
+          clickY <= correctSpot.y + errorMargin
+      ) {
+        if (!this.highlightedSpots[index]) {
+          this.highlightedSpots = {
+            ...this.highlightedSpots,
+            [index]: {
+              style: {
+                position: 'absolute',
+                left: `${correctSpot.x - errorMargin}px`,
+                top: `${correctSpot.y - errorMargin}px`,
+                width: `${errorMargin * 2}px`,
+                height: `${errorMargin * 2}px`,
+                border: '2px solid red',
+                borderRadius: '50%',
+                pointerEvents: 'none'
+              }
+            }
+          };
+          this.foundSpots++;
+          this.checkGameEnd();
         }
       }
     },
-    calculateScore() {
-      const centerX = 140;
-      const centerY = 140;
-
-      this.balls.forEach((ball) => {
-        const distance = Math.sqrt(
-            (ball.x - centerX) ** 2 + (ball.y - centerY) ** 2
-        );
-        this.score += Math.max(0, 100 - distance);
-      });
-    },
-    displayResult() {
-      if (this.score > 1100) {
-        this.resultMessage = 'Отличный уровень координации';
-      } else if (this.score >= 1000) {
-        this.resultMessage = 'Средний уровень координации';
-      } else {
-        this.resultMessage = 'Нуждается в улучшении';
+    checkGameEnd() {
+      if (this.foundSpots === this.totalSpots || this.timer <= 0) {
+        this.gameEnded = true;
+        clearInterval(this.timerInterval);
       }
     },
-    nextLevel() {
-      if (this.level < 3) {
-        this.level++;
-        this.speed += 1;
-        this.resetGame();
-      } else {
-        this.finalMessage = "Игра завершена! Ваш финальный счет: " + this.score;
-        clearInterval(this.interval);
-      }
-    },
-    resetGame() {
-      this.balls.forEach((ball, index) => {
-        ball.x = index === 0 ? 140 : 0;
-        ball.y = index === 0 ? 0 : 140;
-        ball.moving = true;
-      });
-      this.nextBallIndex = 0;
-      this.resultMessage = '';
-    },
-    restartGame() {
-      this.startGame();
-    },
-    getRandomColor() {
-      const letters = '0123456789ABCDEF';
-      let color = '#';
-      for (let i = 0; i < 6; i++) {
-        color += letters[Math.floor(Math.random() * 16)];
-      }
-      return color;
-    },
+    startTimer() {
+      this.timerInterval = setInterval(() => {
+        if (this.timer > 0) {
+          this.timer--;
+        } else {
+          this.gameEnded = true;
+          clearInterval(this.timerInterval);
+        }
+      }, 1000);
+    }
   },
   mounted() {
+    this.startTimer();
   },
   beforeUnmount() {
-    clearInterval(this.interval);
-  },
+    clearInterval(this.timerInterval);
+  }
 };
 </script>
 
-<style scoped>
-.game-container {
+<style>
+.image-container-wrapper {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+}
+
+.image-container {
   position: relative;
+  display: inline-block;
+  margin: 10px;
   width: 300px;
-  height: 300px;
-  margin: auto;
-  background-color: #f0f0f0;
-  overflow: hidden;
 }
 
-.line {
-  position: absolute;
-  background-color: #000;
-}
-
-.vertical {
-  width: 2px;
-  height: 100%;
-  left: 50%;
-  top: 0;
-  transform: translateX(-50%);
-}
-
-.horizontal {
-  height: 2px;
+.image-container img {
   width: 100%;
-  top: 50%;
-  left: 0;
-  transform: translateY(-50%);
+  height: auto;
 }
 
-.ball {
+.highlight {
   position: absolute;
-  width: 20px;
-  height: 20px;
-  border-radius: 50%;
-  cursor: pointer;
 }
-
-.score {
-  position: absolute;
-  top: 10px;
-  left: 10px;
-  font-size: 24px;
-  color: #333;
-}
-
-.level {
-  position: absolute;
-  top: 40px;
-  left: 10px;
-  font-size: 24px;
-  color: #333;
-}
-
-.result {
-  margin-top: 10px;
-  text-align: center;
-  font-size: 20px;
-  color: #333;
-}
-
-.final-result {
-  margin-top: 5px;
-  text-align: center;
-  font-size: 20px;
-  color: #333;
-}
-
 </style>

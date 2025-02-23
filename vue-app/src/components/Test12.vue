@@ -1,4 +1,8 @@
 <template>
+  <Navbar />
+  <div class="container mt-5 text-center">
+    <h2>Тест №{{ $route.params.id }}</h2>
+    <div id="app">
   <div class="container">
     <h2>Тест на внимание «Мюнстерберга»</h2>
     <button v-if="!testStarted" class="start-button" @click="startTest">
@@ -23,12 +27,18 @@
       <button v-if="isAnswered && feedback === 'Правильно!'" class="retry-button" @click="retryTest">
         Пройти тест еще раз
       </button>
+      <br><router-link to="/tests" class="btn btn-secondary">Назад к тестам</router-link>
+    </div>
+  </div>
     </div>
   </div>
 </template>
 
 <script>
+import Navbar from "../view/Navbar.vue";
+
 export default {
+  components: {Navbar},
   data() {
     return {
       words: [
@@ -114,12 +124,6 @@ export default {
 </script>
 
 <style>
-body { font-family: 'Arial', sans-serif;}
-h1 {
-  font-size: 28px;
-  margin-bottom: 20px;
-  color: #333;
-}
 .random-text {
   margin-left: 10%;
   margin-right: 10%;
@@ -128,44 +132,14 @@ h1 {
   border: 1px dashed #ccc;
   border-radius: 5px;
   background-color: #fafafa;
-  overflow-wrap: break-word; 
-}
-.check-button{margin-top: 10px; width: 260px;}
-
-.check-button, .start-button {
-  padding: 10px 20px;
-  font-size: 16px;
-  cursor: pointer;
-  background-color: #4CAF50; 
-  color: white;
-  border: none;
-  border-radius: 5px;
-  transition: background-color 0.3s, transform 0.2s;
-}
-.check-button:hover, .start-button:hover {
-  transform: scale(1.05);
-}
-.retry-button {
-  padding: 10px 20px;
-  font-size: 16px;
-  cursor: pointer;
-  background-color: #b14bb0;
-  color: white;
-  border: none;
-  border-radius: 5px;
-  transition: background-color 0.3s, transform 0.2s;
-}
-
-p{margin:2px}
-.retry-button:hover {
-  background-color: #45a049;
-  transform: scale(1.05);
+  overflow-wrap: break-word;
 }
 .quiz {
   margin-top: 20px;
 }
 .option {
   margin: 5px 0;
+  display: inline-block;
 }
 .feedback {
   font-size: 18px;
@@ -175,7 +149,6 @@ p{margin:2px}
 }
 .success-message {
   font-size: 20px;
-  color: #4CAF50; 
-  font-weight: bold;
+  color: #4CAF50;
 }
 </style>

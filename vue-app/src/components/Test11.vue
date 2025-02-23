@@ -52,28 +52,28 @@
 </template>
 
 <script>
-  import Navbar from "../view/Navbar.vue";
-  import dogImage from "../assets/dog.png";
-  import catImage from "../assets/cat.png";
-  import horseImage from "../assets/horse.png";
-  import cowImage from "../assets/cow.png";
-  import birdImage from "../assets/bird.png";
-  import sheepImage from "../assets/sheep.png";
-  import ratImage from "../assets/rat.png";
-  import pigImage from "../assets/pig.png";
-  import duckImage from "../assets/duck.png";
-  import wildBoarImage from "../assets/wild_boar.png";
+import Navbar from "../view/Navbar.vue";
+import dogImage from "../assets/test_res/dog.png";
+import catImage from "../assets/test_res/cat.png";
+import horseImage from "../assets/test_res/horse.png";
+import cowImage from "../assets/test_res/cow.png";
+import birdImage from "../assets/test_res/bird.png";
+import sheepImage from "../assets/test_res/sheep.png";
+import ratImage from "../assets/test_res/rat.png";
+import pigImage from "../assets/test_res/pig.png";
+import duckImage from "../assets/test_res/duck.png";
+import wildBoarImage from "../assets/test_res/wild_boar.png";
 
-  import dogSound from "../assets/dog.mp3";
-  import catSound from "../assets/cat.mp3";
-  import horseSound from "../assets/horse.mp3";
-  import cowSound from "../assets/cow.mp3";
-  import birdSound from "../assets/bird.mp3";
-  import sheepSound from "../assets/sheep.mp3";
-  import ratSound from "../assets/rat.mp3";
-  import pigSound from "../assets/pig.mp3";
-  import duckSound from "../assets/duck.mp3";
-  import wildBoarSound from "../assets/wild_boar.mp3";
+import dogSound from "../assets/test_res/dog.mp3";
+import catSound from "../assets/test_res/cat.mp3";
+import horseSound from "../assets/test_res/horse.mp3";
+import cowSound from "../assets/test_res/cow.mp3";
+import birdSound from "../assets/test_res/bird.mp3";
+import sheepSound from "../assets/test_res/sheep.mp3";
+import ratSound from "../assets/test_res/rat.mp3";
+import pigSound from "../assets/test_res/pig.mp3";
+import duckSound from "../assets/test_res/duck.mp3";
+import wildBoarSound from "../assets/test_res/wild_boar.mp3";
 
   export default {
   components: { Navbar },
