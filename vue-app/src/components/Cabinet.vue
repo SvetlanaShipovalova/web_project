@@ -9,7 +9,7 @@
 
 
 <script setup>
-import Navbar from "../components/Navbar.vue";
+import Navbar from "../view/Navbar.vue";
 import { useAuthStore } from "../store/authStore";
 import {computed} from "vue";
 
