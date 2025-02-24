@@ -12,9 +12,7 @@
         <h2>Вопрос {{ currentQuestionIndex + 1 }}</h2>
         <p>{{ currentQuestion.text }}</p>
         <ul class="horizontal-options">
-          <li v-for="(option, index) in currentQuestion.options" :key="index">
-            <button @click="checkAnswer(index)">{{ option }}</button>
-          </li>
+          <button v-for="(option, index) in currentQuestion.options" :key="index" @click="checkAnswer(index)">{{ option }}</button>
         </ul>
         <p>Ошибки: {{ missClicks }}</p>
         <p>Время: {{ formatTime(timer) }}</p>

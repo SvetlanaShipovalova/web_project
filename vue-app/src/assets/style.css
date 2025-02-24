@@ -5,8 +5,9 @@ body {
 .container {
     max-width: 900px;
 }
-
-
+.nav-link{
+    padding-top: 17px;
+}
 .card {
     border-radius: 10px;
 }
@@ -20,6 +21,7 @@ body {
 
 .navbar {
     border-bottom: 2px solid #007bff;
+    width: 100%;
 }
 
 
@@ -40,7 +42,10 @@ body {
 #app {
     font-family: Avenir, Helvetica, Arial, sans-serif;
     text-align: center;
+<<<<<<< HEAD
     margin: 20px;
+=======
+>>>>>>> 4b2fa83e4d0e49f3a66b4466b54fcd4940beab7e
 }
 
 button {
