@@ -109,7 +109,7 @@
 
 <script setup>
 import { ref } from "vue";
-import Navbar from "../components/Navbar.vue";
+import Navbar from "../view/Navbar.vue";
 
 
 const isEditing = ref(false);

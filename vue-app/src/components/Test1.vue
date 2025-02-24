@@ -48,7 +48,7 @@
 
 
 <script setup>
-import Navbar from "../components/Navbar.vue";
+import Navbar from "../view/Navbar.vue";
 </script>
 
 <script>
@@ -146,7 +146,7 @@ export default {
         this.gridDimensions = { rows: 4, cols: 3 };
       } else if (this.round === 2) {
         this.maxNumber = 16;
-        this.gridDimensions = { rows: 4, cols: 4 };
+this.gridDimensions = { rows: 4, cols: 4 };
       } else {
         this.maxNumber = 20;
         this.gridDimensions = { rows: 5, cols: 4 };
