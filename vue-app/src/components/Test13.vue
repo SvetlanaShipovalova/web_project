@@ -3,36 +3,40 @@
   <div class="container mt-5 text-center">
     <h2>Тест №{{ $route.params.id }}</h2>
     <div id="app">
-  <div>
-    <div v-if="!gameStarted">
-      <h2>Тест на зрительно-моторную координацию</h2>
-      <p>В каждом раунде ты увидишь два шарика. Шарики будут двигаться вдоль своей оси,
-        <br> и твоя цель - заставить их остановиться как можно ближе к пересечению линий.</p>
-      <button @click="startGame" class="start-button">Начать игру</button>
-    </div>
-    <div v-else>
-      <div class="game-container" @click="stopNextBall">
-        <div class="line vertical"></div>
-        <div class="line horizontal"></div>
-        <div
-            v-for="(ball, index) in balls"
-            :key="index"
-            class="ball"
-            :style="{
-            left: ball.x + 'px',
-            top: ball.y + 'px',
-            backgroundColor: ball.color
-          }"
-        ></div>
-        <div class="score">Score: {{ score }}</div>
-        <div class="level">Level: {{ level }}</div>
+      <div>
+        <div v-if="!gameStarted">
+          <h2>Тест на зрительно-моторную координацию</h2>
+          <p>В каждом раунде ты увидишь два шарика. Шарики будут двигаться вдоль своей оси,
+            <br> и твоя цель - заставить их остановиться как можно ближе к пересечению линий.</p>
+          <button @click="startGame" class="start-button">Начать игру</button>
+        </div>
+        <div v-else>
+          <div class="game-container" @click="stopNextBall">
+            <div class="line vertical"></div>
+            <div class="line horizontal"></div>
+            <div
+              v-for="(ball, index) in balls"
+              :key="index"
+              class="ball"
+              :style="{
+              left: ball.x + 'px',
+              top: ball.y + 'px',
+              backgroundColor: ball.color
+            }"
+            ></div>
+            <div class="score">Score: {{ score }}</div>
+            <div class="level">Level: {{ level }}</div>
+          </div>
+          <div class="result" v-if="resultMessage">{{ resultMessage }}</div>
+          <div class="final-result" v-if="finalMessage">
+            {{ finalMessage }}
+            <p>Время выполнения теста: {{ time }} секунд</p>
+            <p>Точность: {{ accuracy }}%</p>
+          </div>
+          <button v-if="finalMessage" @click="restartGame" class="restart-button">Начать заново</button>
+        </div>
+        <br> <router-link to="/tests" class="btn btn-secondary">Назад к тестам</router-link>
       </div>
-      <div class="result" v-if="resultMessage">{{ resultMessage }}</div>
-      <div class="final-result" v-if="finalMessage">{{ finalMessage }}</div>
-      <button v-if="finalMessage" @click="restartGame" class="restart-button">Начать заново</button>
-    </div>
-    <br> <router-link to="/tests" class="btn btn-secondary">Назад к тестам</router-link>
-  </div>
     </div>
   </div>
 </template>
@@ -41,7 +45,7 @@
 import Navbar from "../view/Navbar.vue";
 
 export default {
-  components: {Navbar},
+  components: { Navbar },
   data() {
     return {
       gameStarted: false,
@@ -56,6 +60,9 @@ export default {
       resultMessage: '',
       finalMessage: '',
       level: 1,
+      time: 0,  // Время выполнения теста
+      accuracy: 0,  // Точность
+      gameStartTime: null,  // Время начала игры
     };
   },
   methods: {
@@ -64,6 +71,7 @@ export default {
       this.score = 0;
       this.level = 1;
       this.speed = 2;
+      this.gameStartTime = Date.now();  // Устанавливаем время начала игры
       this.balls.forEach((ball, index) => {
         ball.x = index === 0 ? 140 : 0;
         ball.y = index === 0 ? 0 : 140;
@@ -77,6 +85,7 @@ export default {
     startInterval() {
       this.interval = setInterval(() => {
         this.moveBalls();
+        this.time = ((Date.now() - this.gameStartTime) / 1000).toFixed(1);  // Вычисляем время
       }, 50);
     },
     moveBalls() {
@@ -126,7 +135,7 @@ export default {
 
       this.balls.forEach((ball) => {
         const distance = Math.sqrt(
-            (ball.x - centerX) ** 2 + (ball.y - centerY) ** 2
+          (ball.x - centerX) ** 2 + (ball.y - centerY) ** 2
         );
         this.score += Math.max(0, 100 - distance);
       });
@@ -134,10 +143,13 @@ export default {
     displayResult() {
       if (this.score > 1100) {
         this.resultMessage = 'Отличный уровень координации';
+        this.accuracy = 100;
       } else if (this.score >= 1000) {
         this.resultMessage = 'Средний уровень координации';
+        this.accuracy = 75;
       } else {
         this.resultMessage = 'Нуждается в улучшении';
+        this.accuracy = 50;
       }
     },
     nextLevel() {
@@ -171,8 +183,7 @@ export default {
       return color;
     },
   },
-  mounted() {
-  },
+  mounted() {},
   beforeUnmount() {
     clearInterval(this.interval);
   },

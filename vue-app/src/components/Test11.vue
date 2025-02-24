@@ -3,31 +3,31 @@
   <div class="container mt-5 text-center">
     <h2>Тест №{{ $route.params.id }}</h2>
     <div id="app">
-        <h2>Найди звуки животных!</h2>
-        <div v-if="!gameStarted && !gameFinished">
-          <button @click="startGame">Старт</button>
-        </div>
-        <div v-else-if="!gameFinished">
-          <div class="game-container">
-            <div class="animal-cards">
-              <h4>Карточки с животными</h4>
-              <div class="card-container">
-                <div
-                    v-for="(animal, index) in shuffledAnimals"
-                    :key="index"
-                    class="card"
-                    :class="{ matched: isMatched(animal) }"
-                    @click="selectAnimal(animal)"
-                >
-                  <img :src="animal.image" alt="animal" />
-                </div>
+      <h2>Найди звуки животных!</h2>
+      <div v-if="!gameStarted && !gameFinished">
+        <button @click="startGame">Старт</button>
+      </div>
+      <div v-else-if="!gameFinished">
+        <div class="game-container">
+          <div class="animal-cards">
+            <h4>Карточки с животными</h4>
+            <div class="card-container">
+              <div
+                v-for="(animal, index) in shuffledAnimals"
+                :key="index"
+                class="card"
+                :class="{ matched: isMatched(animal) }"
+                @click="selectAnimal(animal)"
+              >
+                <img :src="animal.image" alt="animal" />
               </div>
-              <p>Осталось времени: {{ timeLeft }}</p>
-              <p>Набранные очки: {{ score }}</p>
             </div>
-            <div class="sound-cards">
-              <h4>Карточки со звуками</h4>
-              <div class="sound-container">
+            <p>Осталось времени: {{ timeLeft }}</p>
+            <p>Набранные проценты: {{ accuracy }}%</p>
+          </div>
+          <div class="sound-cards">
+            <h4>Карточки со звуками</h4>
+            <div class="sound-container">
               <div v-for="(sound, index) in shuffledSounds" :key="index" class="sound-card">
                 <audio controls>
                   <source :src="sound.audio" type="audio/mpeg">
@@ -36,15 +36,15 @@
                   Нажмите для выбора
                 </button>
               </div>
-              </div>
             </div>
           </div>
         </div>
-        <div v-else>
-          <h2>Игра окончена!</h2>
-          <p>Вы набрали: {{ score }} очков!</p>
-          <p>Оценка: {{ grade }}</p>
-          <button @click="restartGame">Начать заново</button>
+      </div>
+      <div v-else>
+        <h2>Игра окончена!</h2>
+        <p>Вы набрали: {{ accuracy }}%!</p>
+        <p>Время выполнения: {{ time }} секунд!</p>
+        <button @click="restartGame">Начать заново</button>
       </div>
     </div>
     <router-link to="/tests" class="btn btn-secondary">Назад к тестам</router-link>
@@ -74,39 +74,38 @@ import ratSound from "../assets/test_res/rat.mp3";
 import pigSound from "../assets/test_res/pig.mp3";
 import duckSound from "../assets/test_res/duck.mp3";
 import wildBoarSound from "../assets/test_res/wild_boar.mp3";
-
-  export default {
+export default {
   components: { Navbar },
   data() {
-  return {
-  animals: [
-{ name: "Собака", image: dogImage },
-{ name: "Кошка", image: catImage },
-{ name: "Лошадь", image: horseImage },
-{ name: "Корова", image: cowImage },
-{ name: "Птица", image: birdImage },
-{ name: "Овца", image: sheepImage },
-{ name: "Крыса", image: ratImage },
-{ name: "Свинья", image: pigImage },
-{ name: "Утка", image: duckImage },
-{ name: "Кабан", image: wildBoarImage },
-  ],
-    sounds: [
-      { name: "Собака", audio: dogSound },
-      { name: "Кошка", audio: catSound },
-      { name: "Лошадь", audio: horseSound },
-      { name: "Корова", audio: cowSound },
-      { name: "Птица", audio: birdSound },
-      { name: "Овца", audio: sheepSound },
-      { name: "Крыса", audio: ratSound },
-      { name: "Свинья", audio: pigSound },
-      { name: "Утка", audio: duckSound },
-      { name: "Кабан", audio: wildBoarSound },
-    ],
+    return {
+      animals: [
+        { name: "Собака", image: dogImage },
+        { name: "Кошка", image: catImage },
+        { name: "Лошадь", image: horseImage },
+        { name: "Корова", image: cowImage },
+        { name: "Птица", image: birdImage },
+        { name: "Овца", image: sheepImage },
+        { name: "Крыса", image: ratImage },
+        { name: "Свинья", image: pigImage },
+        { name: "Утка", image: duckImage },
+        { name: "Кабан", image: wildBoarImage },
+      ],
+      sounds: [
+        { name: "Собака", audio: dogSound },
+        { name: "Кошка", audio: catSound },
+        { name: "Лошадь", audio: horseSound },
+        { name: "Корова", audio: cowSound },
+        { name: "Птица", audio: birdSound },
+        { name: "Овца", audio: sheepSound },
+        { name: "Крыса", audio: ratSound },
+        { name: "Свинья", audio: pigSound },
+        { name: "Утка", audio: duckSound },
+        { name: "Кабан", audio: wildBoarSound },
+      ],
       matchedPairs: [],
       selectedAnimal: null,
       selectedSound: null,
-      score: 0,
+      time: 0,
       timeLeft: 60,
       gameFinished: false,
       gameStarted: false,
@@ -116,10 +115,8 @@ import wildBoarSound from "../assets/test_res/wild_boar.mp3";
     };
   },
   computed: {
-    grade() {
-      if (this.score <= 2) return "Плохо";
-      else if (this.score <= 3) return "Хорошо";
-      else return "Отлично";
+    accuracy() {
+      return this.matchedPairs.length / this.animals.length * 100 || 0;
     },
   },
   methods: {
@@ -142,7 +139,6 @@ import wildBoarSound from "../assets/test_res/wild_boar.mp3";
       if (this.selectedAnimal && this.selectedSound) {
         if (this.selectedAnimal.name === this.selectedSound.name && !this.isMatched(this.selectedAnimal)) {
           this.matchedPairs.push(this.selectedAnimal);
-          this.score++;
         }
         this.selectedAnimal = null;
         this.selectedSound = null;
@@ -156,11 +152,19 @@ import wildBoarSound from "../assets/test_res/wild_boar.mp3";
       return this.matchedPairs.includes(animal);
     },
     startTimer() {
+      const startTime = Date.now(); // Запоминаем время начала игры
       this.timer = setInterval(() => {
         this.timeLeft--;
         if (this.timeLeft <= 0) {
           clearInterval(this.timer);
           this.endGame();
+        }
+      }, 1000);
+
+      // Устанавливаем интервал для подсчета времени выполнения
+      setInterval(() => {
+        if (this.gameStarted && !this.gameFinished) {
+          this.time = Math.floor((Date.now() - startTime) / 1000); // Обновляем общее время
         }
       }, 1000);
     },
@@ -172,6 +176,7 @@ import wildBoarSound from "../assets/test_res/wild_boar.mp3";
       this.score = 0;
       this.timeLeft = 60;
       this.matchedPairs = [];
+      this.time = 0;
       this.gameFinished = false;
       this.gameStarted = false;
       this.shuffleAnimals();
@@ -192,12 +197,11 @@ import wildBoarSound from "../assets/test_res/wild_boar.mp3";
 </script>
 
 <style scoped>
-
-   .game-container {
-     display: flex;
-     flex-direction: column;
-     margin: 20px;
-   }
+.game-container {
+  display: flex;
+  flex-direction: column;
+  margin: 20px;
+}
 
 .animal-cards {
   margin-bottom: 20px;
@@ -227,7 +231,6 @@ import wildBoarSound from "../assets/test_res/wild_boar.mp3";
 .sound-cards {
   width: 100%; /* Занять полную ширину */
 }
-
 .sound-container {
   display: grid;
   grid-template-columns: repeat(2, 1fr); /* Два столбца */
@@ -243,5 +246,4 @@ import wildBoarSound from "../assets/test_res/wild_boar.mp3";
   background-color: #f9f9f9;
   height: 80px; /* Установите небольшую высоту для блоков со звуками */
 }
-
 </style>
