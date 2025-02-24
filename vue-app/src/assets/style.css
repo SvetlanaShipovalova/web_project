@@ -1,86 +1,209 @@
+/* ==============================
+   БАЗОВЫЕ СТИЛИ
+============================== */
 body {
     background-color: #f8f9fa;
-}
-
-.container {
-    max-width: 900px;
-}
-.nav-link{
-    padding-top: 17px;
-}
-.card {
-    border-radius: 10px;
-}
-
-
-.btn-primary, .btn-success, .btn-danger {
-    border-radius: 20px;
-    font-weight: bold;
-}
-
-
-.navbar {
-    border-bottom: 2px solid #007bff;
-    width: 100%;
-}
-
-
-.nav-link {
-    font-size: 1.1rem;
-}
-
-
-.navbar-brand {
-    font-weight: bold;
-    font-size: 1.3rem;
-}
-.btn{
-    padding-bottom: 8px
-}
-
-
-#app {
     font-family: Avenir, Helvetica, Arial, sans-serif;
     text-align: center;
-<<<<<<< HEAD
-    margin: 20px;
-=======
->>>>>>> 4b2fa83e4d0e49f3a66b4466b54fcd4940beab7e
-}
-
-button {
+  }
+  
+  .container {
+    max-width: 900px;
+    margin: 0 auto;
+    padding: 20px;
+  }
+  
+  .navbar {
+    border-bottom: 2px solid #007bff;
+    width: 100%;
+  }
+  
+  .navbar-brand {
+    font-weight: bold;
+    font-size: 1.3rem;
+  }
+  
+  .nav-link {
+    font-size: 1.1rem;
+    padding-top: 17px;
+  }
+  
+  .card {
+    border-radius: 10px;
+  }
+  
+  .btn-primary,
+  .btn-success,
+  .btn-danger {
+    border-radius: 20px;
+    font-weight: bold;
+  }
+  
+  button {
     padding: 10px;
     font-size: 16px;
     margin: 10px;
-}
-
-button#text {
+    border-radius: 10px;
+  }
+  
+  button#text {
     margin: 0 15px;
-}
-
-.grid {
+  }
+  
+  /* ==============================
+     СЕТКА ДЛЯ ТЕСТОВ (Например, Таблица Шульте)
+  ============================== */
+  .grid {
     display: grid;
     grid-template-columns: repeat(4, 1fr);
-    gap: 3px 0px;
+    gap: 5px;
     width: fit-content;
     margin: 0 auto 20px auto;
-}
-
-.grid-button {
-    width: 40px;
-    height: 40px;
-    font-size: 14px;
+  }
+  
+  .grid-button {
+    width: 50px;
+    height: 50px;
+    font-size: 16px;
     text-align: center;
     box-sizing: border-box;
     background-color: #f1f1f1;
     border: 1px solid #ccc;
-}
-
-button:disabled {
-    background-color: #f1f1f1;
+    cursor: pointer;
+  }
+  
+  .grid-button:disabled {
+    background-color: #ddd;
     color: #aaa;
-}
-
-.controls {
+  }
+  
+  /* ==============================
+     СТИЛИ ДЛЯ ИГРЫ "СРАВНЕНИЕ ОБЪЕКТОВ"
+  ============================== */
+  .game-container {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+  }
+  
+  /* 
+     Здесь .game-area часто используется для расположения
+     двух блоков-картинок по центру. 
+     Если нужна именно сетка (колонки), можно заменить на display: grid
+  */
+  .game-area {
+    display: flex;
+    justify-content: center;
+    align-items: flex-start;
+    gap: 40px;
     margin-top: 20px;
-}
+  }
+  
+  .image-container {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+    border: 2px solid #007bff;
+    padding: 20px;
+    min-width: 200px;
+    min-height: 150px;
+  }
+  
+  .symbol {
+    font-size: 24px;
+    padding: 10px;
+    margin: 5px;
+    background-color: #fff;
+    border: 1px solid #ddd;
+    border-radius: 5px;
+  }
+  
+  .choices {
+    display: flex;
+    justify-content: center;
+    margin-top: 20px;
+  }
+  
+  .choice-button {
+    padding: 10px 20px;
+    font-size: 18px;
+    margin: 10px;
+    border-radius: 10px;
+    border: none;
+    cursor: pointer;
+  }
+  
+  .choice-button:hover {
+    background-color: #007bff;
+    color: white;
+  }
+  
+  /* ==============================
+     СООБЩЕНИЯ
+  ============================== */
+  .message {
+    font-size: 18px;
+    font-weight: bold;
+    margin-top: 15px;
+  }
+  
+  .correct {
+    color: green;
+  }
+  
+  .incorrect {
+    color: red;
+  }
+  
+  .end-message {
+    margin-top: 30px;
+    font-size: 20px;
+    font-weight: bold;
+  }
+  
+  /* ==============================
+     СТИЛИ ДЛЯ ИГРЫ "КОПИЛКА"
+  ============================== */
+  /* Кнопка старта */
+  .start-button {
+    margin-top: 20px;
+  }
+  
+  /* 
+     Основная зона: 
+     две копилки по бокам с отступом между ними.
+  */
+  .game-area.piggy-bank-game {
+    display: flex;
+    justify-content: center;
+    align-items: flex-start;
+    gap: 40px; /* Расстояние между копилками */
+    margin-top: 20px;
+  }
+  
+  /* Оформление одной копилки (прямоугольник с фоном) */
+  .piggy-bank {
+    width: 200px;              /* Ширина копилки */
+    height: 200px;             /* Высота копилки */
+    background-color: #fff2cc; /* Светлый фон (пример) */
+    border: 2px solid #dfd5a3; /* Тонкая рамка */
+    border-radius: 15px;       /* Закруглённые углы */
+    padding: 10px;             /* Внутренние отступы */
+    box-shadow: 2px 2px 5px rgba(0,0,0,0.1); /* Лёгкая тень */
+    overflow-y: auto;          /* Прокрутка, если монет много */
+  }
+  
+  /* Монеты (круглые, одинаковый размер) */
+  .coin {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 40px;               /* Размер монеты */
+    height: 40px;
+    margin: 5px;
+    background-color: gold;    /* Жёлтый цвет монеты */
+    color: #000;               /* Тёмный текст (1 или 2) */
+    font-weight: bold;
+    border-radius: 50%;        /* Делаем монету круглой */
+  }
+  
