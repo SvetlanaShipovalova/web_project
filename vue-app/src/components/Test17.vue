@@ -42,8 +42,8 @@
           <p>Тест завершён! Вы правильно расположили {{ totalCorrect }} из 256 оттенков.</p>
           <p>Точность выполнения: {{ accuracy }}%</p>
           <p>Время прохождения теста: {{ time }} секунд</p>
-          <router-link to="/tests" class="btn btn-secondary">Назад к тестам</router-link>
         </div>
+        <router-link to="/tests" class="btn btn-secondary">Назад к тестам</router-link>
       </div>
     </div>
   </template>

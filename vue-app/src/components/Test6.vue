@@ -48,9 +48,9 @@
           <p>Правильных ответов: {{ correctAnswers }} из {{ totalAnswers }}</p>
           <p>Точность: {{ accuracy }}%</p>
           <p>Время: {{ elapsedTime }} секунд</p>
-          <router-link to="/tests" class="btn btn-secondary">Назад к тестам</router-link>
         </div>
       </div>
+      <router-link to="/tests" class="btn btn-secondary">Назад к тестам</router-link>
     </div>
   </template>
   

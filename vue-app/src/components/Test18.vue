@@ -40,8 +40,8 @@
           <h3>Тест завершен!</h3>
           <p>Время выполнения: {{ elapsedTime }} секунд</p>
           <p>Точность: {{ accuracy }}%</p>
-          <router-link to="/tests" class="btn btn-secondary">Назад к тестам</router-link>
         </div>
+        <router-link to="/tests" class="btn btn-secondary">Назад к тестам</router-link>
       </div>
     </div>
   </template>

@@ -37,9 +37,9 @@
           <p>Точность: {{ accuracy }}%</p>
           <div class="controls">
             <button class="btn btn-success" @click="restartGame">Начать заново</button>
-            <router-link to="/tests" class="btn btn-secondary">Назад к тестам</router-link>
           </div>
         </div>
+        <router-link to="/tests" class="btn btn-secondary">Назад к тестам</router-link>
       </div>
     </div>
   </template>

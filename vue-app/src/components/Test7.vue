@@ -48,8 +48,8 @@
           <p>Правильных ответов: {{ correctAnswers }} из {{ totalRounds }}</p>
           <p>Точность: {{ accuracy }}%</p>
           <p>Время: {{ time }} секунд</p>
-          <router-link to="/tests" class="btn btn-secondary">Назад к тестам</router-link>
         </div>
+        <router-link to="/tests" class="btn btn-secondary mt-3">Назад к тестам</router-link>
       </div>
     </div>
   </template>

@@ -34,6 +34,7 @@
         <p>Время выполнения: {{ time }} секунд</p>
         <button class="btn btn-secondary" @click="resetTest">Пройти заново</button>
       </div>
+      <router-link to="/tests" class="btn btn-secondary">Назад к тестам</router-link>
     </div>
   </div>
 </template>

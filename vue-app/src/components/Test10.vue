@@ -43,8 +43,8 @@
         <p>Время прохождения: {{ time }}</p>
         <p>Точность: {{ accuracy }}%</p>
         <p>{{ motivationalMessage }}</p>
-        <router-link to="/tests" class="btn btn-secondary">Назад к тестам</router-link>
       </div>
+      <router-link to="/tests" class="btn btn-secondary">Назад к тестам</router-link>
     </div>
   </div>
 </template>

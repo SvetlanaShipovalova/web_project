@@ -32,8 +32,8 @@
           <p>Среднее время реакции: {{ time.toFixed(2) }} сек</p>
           <p>Точность: {{ accuracy }}%</p>
           <button class="btn btn-success" @click="restartGame">Пройти снова</button>
-          <router-link to="/tests" class="btn btn-secondary">Назад к тестам</router-link>
         </div>
+        <router-link to="/tests" class="btn btn-secondary mt-3">Назад к тестам</router-link>
       </div>
     </div>
   </template>
