@@ -1,52 +1,76 @@
 import { defineStore } from "pinia";
+import { ref } from "vue";
+import { useRouter } from "vue-router";
+
 
 export const useAuthStore = defineStore("auth", {
-    state: () => ({
-        user: null,
-        token: null, // Пока без бэкенда, будет заглушка
-        isAdmin: false, // Добавляем флаг isAdmin
-    }),
+   state: () => ({
+       user: null,
+       token: null,
+       isAdmin: false,
+   }),
 
-    getters: {
-        isAuthenticated: (state) => !!state.token,
-    },
 
-    actions: {
-        login(username, password) {
-            // Временные учетные данные для администратора
-            if (username === "admin" && password === "admin123") {
-                this.token = "admin-fake-token";
-                this.user = { username: "admin", role: "admin" }; // добавляем роль пользователю
-                this.isAdmin = true; // Устанавливаем isAdmin в true
-                localStorage.setItem("token", this.token);
-                localStorage.setItem("isAdmin", "true");  // Сохраняем isAdmin в localStorage
-                return true;
-            }
+   actions: {
+       async login(username, password) {
+           try {
+               const response = await fetch("http://127.0.0.1:8000/api/login/", {
+                   method: "POST",
+                   headers: {
+                       "Content-Type": "application/json",
+                   },
+                   body: JSON.stringify({ nickname: username, password }),
+               });
 
-            // Стандартные учетные данные
-            if (username === "test" && password === "1234") {
-                this.token = "fake-token"; // Заглушка вместо настоящего API
-                this.user = { username, role: "user" };  // добавляем роль пользователю
-                this.isAdmin = false; // Устанавливаем isAdmin в false
-                localStorage.setItem("token", this.token);
-                localStorage.setItem("isAdmin", "false");  // Сохраняем isAdmin в localStorage
-                return true;
-            } else {
-                return false;
-            }
-        },
 
-        register(username, password) {
-            console.log(`Регистрация пользователя: ${username} с паролем ${password}`);
-            return true;
-        },
+               if (response.ok) {
+                   const data = await response.json();
+                   this.user = { id: data.user_id, username };
+                   this.token = "fake-token";  // Заглушка для токена
+                   localStorage.setItem("token", this.token);
+                   return true;
+               } else {
+                   const errorData = await response.json();
+                   alert(errorData.error || "Ошибка входа");
+                   return false;
+               }
+           } catch (error) {
+               console.error("Ошибка при входе:", error);
+               return false;
+           }
+       },
 
-        logout() {
-            this.token = null;
-            this.user = null;
-            this.isAdmin = false; // Сбрасываем isAdmin при выходе
-            localStorage.removeItem("token");
-            localStorage.removeItem("isAdmin");  // Удаляем isAdmin из localStorage
-        },
-    },
+
+       async register(username, password) {
+           try {
+               const response = await fetch("http://127.0.0.1:8000/api/register/", {
+                   method: "POST",
+                   headers: {
+                       "Content-Type": "application/json",
+                   },
+                   body: JSON.stringify({ nickname: username, password_hash: password }),
+               });
+
+
+               if (response.ok) {
+                   alert("Регистрация успешна!");
+                   return true;
+               } else {
+                   const errorData = await response.json();
+                   alert(errorData.error || "Ошибка регистрации");
+                   return false;
+               }
+           } catch (error) {
+               console.error("Ошибка при регистрации:", error);
+               return false;
+           }
+       },
+
+
+       logout() {
+           this.user = null;
+           this.token = null;
+           localStorage.removeItem("token");
+       },
+   },
 });
