@@ -1,34 +1,5 @@
-# Vue.js Cognitive Testing App
+# Vue 3 + Vite
 
-Этот проект представляет собой фронтенд для веб-приложения когнитивного тестирования, разработанный с использованием **Vue.js** и **Vite**. Данный файл содержит инструкции по установке и запуску проекта.
+This template should help get you started developing with Vue 3 in Vite. The template uses Vue 3 `<script setup>` SFCs, check out the [script setup docs](https://v3.vuejs.org/api/sfc-script-setup.html#sfc-script-setup) to learn more.
 
-## Установка и запуск проекта
-
-1. **Склонируйте репозиторий:**
-   ```sh
-   git clone https://github.com/ВАШ_РЕПОЗИТОРИЙ.git
-   ```
-   Перейдите в папку проекта:
-   ```sh
-   cd vue-app
-   ```
-
-2. **Установите зависимости:**
-   ```sh
-   npm install
-   ```
-
-3. **Установите Pinia:**
-   ```sh
-   npm install pinia
-   ```
-
-4. **Установите Vite:**
-   ```sh
-   npm install -D vite
-   ```
-
-5. **Запустите сервер разработки:**
-   ```sh
-   npm run dev
-   ```
+Learn more about IDE Support for Vue in the [Vue Docs Scaling up Guide](https://vuejs.org/guide/scaling-up/tooling.html#ide-support).
