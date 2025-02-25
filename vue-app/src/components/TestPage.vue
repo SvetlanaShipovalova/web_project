@@ -32,6 +32,7 @@ const testComponents = {
   '17': defineAsyncComponent(() => import('../components/Test17.vue')),
   '18': defineAsyncComponent(() => import('../components/Test18.vue')),
   '19': defineAsyncComponent(() => import('../components/Test19.vue')),
+  '20': defineAsyncComponent(() => import('../components/Test20.vue')),
 
 };
 
