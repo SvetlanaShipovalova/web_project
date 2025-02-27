@@ -2,6 +2,7 @@
     <!-- Navbar вне контейнера, чтобы занимать всю ширину экрана -->
     <Navbar />
     <div class="container mt-5 text-center">
+    <h2>{{ $route.params.name }}</h2>
       <div class="game-container sequence-test-container">
         <!-- Начальный экран -->
         <div v-if="!gameStarted && !gameEnded">

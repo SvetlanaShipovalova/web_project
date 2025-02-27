@@ -1,7 +1,7 @@
 <template>
   <Navbar />
   <div class="container mt-5 text-center">
-    <h2>Тест №{{ $route.params.id }}</h2>
+    <h2>Тест №{{ $route.params.name }}</h2>
     <div id="app">
       <div v-if="currentView === 'start'">
         <h1>Проверка на быстроту реакции и сообразительность</h1>

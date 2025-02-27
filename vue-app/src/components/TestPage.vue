@@ -3,40 +3,39 @@
 </template>
 
 <script setup>
-import {defineAsyncComponent, computed, defineProps} from 'vue';
+import { defineAsyncComponent, computed, defineProps } from 'vue';
 
 const props = defineProps({
-  id: {
+  name: { 
     type: String,
     required: true
   }
 });
 
 const testComponents = {
-  '1': defineAsyncComponent(() => import('.//Test1.vue')),
-  '2': defineAsyncComponent(() => import('.//Test2.vue')),
-  '3': defineAsyncComponent(() => import('.//Test3.vue')),
-  '4': defineAsyncComponent(() => import('.//Test4.vue')),
-  '5': defineAsyncComponent(() => import('.//Test5.vue')),
-  '6': defineAsyncComponent(() => import('./Test6.vue')),
-  '7': defineAsyncComponent(() => import('./Test7.vue')),
-  '8': defineAsyncComponent(() => import('./Test8.vue')),
-  '9': defineAsyncComponent(() => import('./Test9.vue')),
-  '10': defineAsyncComponent(() => import('./Test10.vue')),
-  '11': defineAsyncComponent(() => import('../components/Test11.vue')),
-  '12': defineAsyncComponent(() => import('../components/Test12.vue')),
-  '13': defineAsyncComponent(() => import('../components/Test13.vue')),
-  '14': defineAsyncComponent(() => import('../components/Test14.vue')),
-  '15': defineAsyncComponent(() => import('../components/Test15.vue')),
-  '16': defineAsyncComponent(() => import('../components/Test16.vue')),
-  '17': defineAsyncComponent(() => import('../components/Test17.vue')),
-  '18': defineAsyncComponent(() => import('../components/Test18.vue')),
-  '19': defineAsyncComponent(() => import('../components/Test19.vue')),
-  '20': defineAsyncComponent(() => import('../components/Test20.vue')),
-
+  'Тест 1': defineAsyncComponent(() => import('../components/Test1.vue')),
+  'Тест 2': defineAsyncComponent(() => import('../components/Test2.vue')),
+  'Тест 3': defineAsyncComponent(() => import('../components/Test3.vue')),
+  'Тест 4': defineAsyncComponent(() => import('../components/Test4.vue')),
+  'Тест 5': defineAsyncComponent(() => import('../components/Test5.vue')),
+  'Тест 6': defineAsyncComponent(() => import('../components/Test6.vue')),
+  'Тест 7': defineAsyncComponent(() => import('../components/Test7.vue')),
+  'Тест 8': defineAsyncComponent(() => import('../components/Test8.vue')),
+  'Тест 9': defineAsyncComponent(() => import('../components/Test9.vue')),
+  'Тест 10': defineAsyncComponent(() => import('../components/Test10.vue')),
+  'Тест 11': defineAsyncComponent(() => import('../components/Test11.vue')),
+  'Тест 12': defineAsyncComponent(() => import('../components/Test12.vue')),
+  'Тест 13': defineAsyncComponent(() => import('../components/Test13.vue')),
+  'Тест 14': defineAsyncComponent(() => import('../components/Test14.vue')),
+  'Тест 15': defineAsyncComponent(() => import('../components/Test15.vue')),
+  'Тест 16': defineAsyncComponent(() => import('../components/Test16.vue')),
+  'Тест 17': defineAsyncComponent(() => import('../components/Test17.vue')),
+  'Тест 18': defineAsyncComponent(() => import('../components/Test18.vue')),
+  'Тест 19': defineAsyncComponent(() => import('../components/Test19.vue')),
+  'Тест 20': defineAsyncComponent(() => import('../components/Test20.vue')),
 };
 
 const currentComponent = computed(() => {
-  return testComponents[props.id] || null;
+  return testComponents[props.name] || null;
 });
 </script>

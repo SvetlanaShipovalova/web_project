@@ -1,7 +1,7 @@
 <template>
     <Navbar />
     <div class="container mt-5 text-center">
-      <h2>Тест №{{ $route.params.id }}</h2>
+      <h2>{{ $route.params.name }}</h2>
       <div id="app">
         <div v-if="testFinished" class="result">
           <h2>Тест завершён!</h2>

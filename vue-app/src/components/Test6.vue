@@ -1,7 +1,7 @@
 <template>
     <Navbar />
     <div class="container mt-5 text-center">
-      <h2>Тест №{{ $route.params.id }}</h2>
+      <h2>{{ $route.params.name }}</h2>
       <div id="app">
         <!-- Начальный экран -->
         <div v-if="!gameStarted && !gameEnded">
@@ -52,123 +52,142 @@
       </div>
       <router-link to="/tests" class="btn btn-secondary">Назад к тестам</router-link>
     </div>
-  </template>
-  
-  <script setup>
-  import Navbar from "../view/Navbar.vue";
-  </script>
-  
-  <script>
-  export default {
+</template>
+
+<script setup>
+import Navbar from "../view/Navbar.vue";
+</script>
+
+<script>
+export default {
     data() {
-      return {
-        gameStarted: false,
-        gameEnded: false,
-        time: 90, // обратный отсчёт
-        timer: null,
-        lives: 3,
-        symbolsCount: 2,
-        maxSymbolsCount: 6,
-        leftImage: [],
-        rightImage: [],
-        imagesMatch: false,
-        message: "",
-        isCorrect: null,
-        correctAnswers: 0,
-        totalAnswers: 0,
-        accuracy: 0,
-        elapsedTime: 0,
-        startTime: null,
-        symbols: ["🔲", "⚫", "⬛", "▷", "▼", "▲", "▽", "🔘"],
-      };
+        return {
+            gameStarted: false,
+            gameEnded: false,
+            time: 90,
+            timer: null,
+            lives: 3,
+            symbolsCount: 2,
+            maxSymbolsCount: 6,
+            leftImage: [],
+            rightImage: [],
+            imagesMatch: false,
+            message: "",
+            isCorrect: null,
+            correctAnswers: 0,
+            totalAnswers: 0,
+            accuracy: 100, // Начальная точность 100%
+            elapsedTime: 0,
+            startTime: null,
+            symbols: ["🔲", "⚫", "⬛", "▷", "▼", "▲", "▽", "🔘"],
+            mistakes: 0, // Счетчик ошибок
+        };
     },
     computed: {
-      formattedTime() {
-        const minutes = Math.floor(this.time / 60).toString().padStart(2, "0");
-        const seconds = (this.time % 60).toString().padStart(2, "0");
-        return `${minutes}:${seconds}`;
-      },
+        formattedTime() {
+            const minutes = Math.floor(this.time / 60).toString().padStart(2, "0");
+            const seconds = (this.time % 60).toString().padStart(2, "0");
+            return `${minutes}:${seconds}`;
+        },
     },
     methods: {
-      startGame() {
-        this.gameStarted = true;
-        this.gameEnded = false;
-        this.time = 90;
-        this.lives = 3;
-        this.correctAnswers = 0;
-        this.totalAnswers = 0;
-        this.accuracy = 0;
-        this.symbolsCount = 2;
-        this.message = "";
-        this.startTime = new Date();
-        this.generateImages();
-        this.startTimer();
-      },
-      startTimer() {
-        clearInterval(this.timer);
-        this.timer = setInterval(() => {
-          this.time--;
-          if (this.time <= 0) {
-            clearInterval(this.timer);
-            this.endGame();
-          }
-        }, 1000);
-      },
-      generateImages() {
-        const leftImage = Array.from({ length: this.symbolsCount }, () =>
-          this.symbols[Math.floor(Math.random() * this.symbols.length)]
-        );
-        const rightImage = [...leftImage];
-    
-        this.imagesMatch = Math.random() < 0.7;
-        if (!this.imagesMatch) {
-          const randomIndex = Math.floor(Math.random() * rightImage.length);
-          let randomSymbol;
-          do {
-            randomSymbol = this.symbols[Math.floor(Math.random() * this.symbols.length)];
-          } while (randomSymbol === rightImage[randomIndex]);
-          rightImage[randomIndex] = randomSymbol;
-        }
-    
-        this.leftImage = leftImage;
-        this.rightImage = rightImage;
-      },
-      handleAnswer(answer) {
-        this.totalAnswers++;
-        if (answer === this.imagesMatch) {
-          this.message = "Правильно!";
-          this.isCorrect = true;
-          this.correctAnswers++;
-        } else {
-          this.message = "Неправильно!";
-          this.isCorrect = false;
-          this.lives--;
-        }
-    
-        if (this.lives === 0 || this.time <= 0) {
-          clearInterval(this.timer);
-          this.accuracy = this.totalAnswers > 0 
-            ? Math.round((this.correctAnswers / this.totalAnswers) * 100)
-            : 0;
-          this.endGame();
-        } else {
-          if (this.correctAnswers % 3 === 0 && this.symbolsCount < this.maxSymbolsCount) {
-            this.symbolsCount++;
-          }
-          setTimeout(() => {
+        startGame() {
+            this.gameStarted = true;
+            this.gameEnded = false;
+            this.time = 30;
+            this.lives = 3;
+            this.correctAnswers = 0;
+            this.totalAnswers = 0;
+            this.accuracy = 100; // Сброс точности
             this.message = "";
+            this.startTime = new Date();
+            this.mistakes = 0; // Сброс счетчика ошибок
+            this.symbolsCount = 2;
             this.generateImages();
-          }, 1000);
-        }
-      },
-      endGame() {
-        this.gameStarted = false;
-        this.gameEnded = true;
-        const endTime = new Date();
-        this.elapsedTime = ((endTime - this.startTime) / 1000).toFixed(2);
-      },
+            this.startTimer();
+        },
+        startTimer() {
+            clearInterval(this.timer);
+            this.timer = setInterval(() => {
+                this.time--;
+                if (this.time <= 0) {
+                    clearInterval(this.timer);
+                    this.endGame();
+                }
+            }, 1000);
+        },
+        generateImages() {
+            const leftImage = Array.from({ length: this.symbolsCount }, () =>
+                this.symbols[Math.floor(Math.random() * this.symbols.length)]
+            );
+            const rightImage = [...leftImage];
+
+            this.imagesMatch = Math.random() < 0.7;
+            if (!this.imagesMatch) {
+                const randomIndex = Math.floor(Math.random() * rightImage.length);
+                let randomSymbol;
+                do {
+                    randomSymbol = this.symbols[Math.floor(Math.random() * this.symbols.length)];
+                } while (randomSymbol === rightImage[randomIndex]);
+                rightImage[randomIndex] = randomSymbol;
+            }
+
+            this.leftImage = leftImage;
+            this.rightImage = rightImage;
+        },
+        handleAnswer(answer) {
+            this.totalAnswers++;
+            if (answer === this.imagesMatch) {
+                this.message = "Правильно!";
+                this.isCorrect = true;
+                this.correctAnswers++;
+            } else {
+                this.message = "Неправильно!";
+                this.isCorrect = false;
+                this.lives--;
+                this.mistakes++; // Увеличиваем счетчик ошибок
+            }
+
+            if (this.lives === 0 || this.time <= 0) {
+                clearInterval(this.timer);
+                this.calculateAccuracy(); // Вызываем метод для расчета точности
+                this.endGame();
+            } else {
+                if (this.correctAnswers % 3 === 0 && this.symbolsCount < this.maxSymbolsCount) {
+                    this.symbolsCount++;
+                }
+                setTimeout(() => {
+                    this.message = "";
+                    this.generateImages();
+                }, 1000);
+            }
+        },
+        calculateAccuracy() {
+    if (this.mistakes === 0) {
+        this.accuracy = 100;
+    } else if (this.mistakes === 1) {
+        this.accuracy = Math.max(0, (100 - 30 + this.correctAnswers));
+    } else if (this.mistakes === 2) {
+        this.accuracy = Math.max(0, (100 - 30 - 30 + this.correctAnswers));
+    } else if (this.mistakes >= 3) {
+        this.accuracy = Math.max(0, (100 - 30 - 30 - 10 + this.correctAnswers));
+    }
+
+    if (this.mistakes > 0) {
+        this.accuracy = parseFloat(this.accuracy.toFixed(2)); 
+    } else {
+        this.accuracy = parseFloat(this.accuracy.toFixed(2)); 
+    }
+},
+        endGame() {
+            this.gameStarted = false;
+            this.gameEnded = true;
+            const endTime = new Date();
+            this.elapsedTime = ((endTime - this.startTime) / 1000).toFixed(2);
+        },
     },
-  };
-  </script>
-  
-  <style src="../assets/style.css"></style>  
+};
+</script>
+
+<style src="../assets/style.css"></style>
+

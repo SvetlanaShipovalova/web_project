@@ -1,6 +1,7 @@
 <template>
 <Navbar />
   <div class="memory-test">
+  <h2>{{ $route.params.name }}</h2>
     <h1 class="title">Тест по методике "Оперативная память"</h1>
     <p class="description">
       Внимательно смотрите на экран и запоминайте появляющиеся на нем цифры для дальнейшего сложения.

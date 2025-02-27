@@ -1,7 +1,7 @@
 <template>
-  <!-- Navbar вне контейнера, чтобы занимать всю ширину -->
   <Navbar />
   <div class="container mt-5 text-center">
+  <h2>{{ $route.params.name }}</h2>
     <div class="color-blindness-test">
       <h1>Тест на цветовое зрение</h1>
       
