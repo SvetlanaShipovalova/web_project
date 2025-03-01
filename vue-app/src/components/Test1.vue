@@ -67,7 +67,8 @@ export default {
       results: [],
       missClicks: 0,
       totalMissClicks: 0,
-      gridDimensions: { rows: 4, cols: 3 }
+      gridDimensions: { rows: 4, cols: 3 },
+      time: "0.00"
     };
   },
   computed: {
@@ -124,6 +125,7 @@ export default {
       const timeSpent = 60 - this.remainingTime;
       this.results.push(timeSpent);
       this.totalMissClicks += this.missClicks;
+      this.time = timeSpent.toFixed(2);
       if (this.round < 3) {
         this.round += 1;
         this.resetRound();
