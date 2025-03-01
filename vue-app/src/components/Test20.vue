@@ -1,8 +1,7 @@
 <template>
 <Navbar />
   <div class="memory-test">
-  <h2>{{ $route.params.name }}</h2>
-    <h1 class="title">Тест по методике "Оперативная память"</h1>
+    <h2>{{ $route.params.name }}</h2>
     <p class="description">
       Внимательно смотрите на экран и запоминайте появляющиеся на нем цифры для дальнейшего сложения.
       Напоминаю: ваша цель сложить первую цифру со второй, вторую цифру с третьей, третью с четвертой. Результаты введите в таблицу ниже.
@@ -83,10 +82,15 @@
 
 <script>
 import Navbar from "../view/Navbar.vue";
+import {useAuthStore} from '../store/authStore';
 
 export default {
   components: {
     Navbar
+  },
+  setup() {
+    const authStore = useAuthStore();
+    return {authStore};
   },
   data() {
     return {
@@ -95,15 +99,15 @@ export default {
       currentNumber: null,
       currentRowNumber: null,
       showRowNumber: false,
-      results: Array.from({ length: 5 }, () => Array(3).fill(null)),
-      userInputs: Array.from({ length: 5 }, () => Array(3).fill("")),
+      results: Array.from({length: 5}, () => Array(3).fill(null)),
+      userInputs: Array.from({length: 5}, () => Array(3).fill("")),
       isSubmitted: false,
       rowIndex: 0,
       numIndex: 0,
       numbers: [],
-      numbersDisplayed: false, // Параметр, отслеживающий завершение показа чисел
-      startTimeValue: null, // Время начала теста (со второго числа)
-      time: "0.00", // Время выполнения
+      numbersDisplayed: false,
+      startTimeValue: null,
+      time: "0.00",
     };
   },
   computed: {
@@ -111,7 +115,6 @@ export default {
       let correctAnswers = 0;
       let totalCells = this.results.length * this.results[0].length;
 
-      // Проверяем правильность ввода пользователя
       this.userInputs.forEach((row, rowIndex) => {
         row.forEach((value, colIndex) => {
           if (Number(value) === this.results[rowIndex][colIndex]) {
@@ -146,7 +149,7 @@ export default {
 
       this.stage = "numbers";
       this.currentRowNumber = this.rowIndex + 1;
-      this.numbers = Array.from({ length: 4 }, () => Math.floor(Math.random() * 9) + 1);
+      this.numbers = Array.from({length: 4}, () => Math.floor(Math.random() * 9) + 1);
       this.results[this.rowIndex] = [
         this.numbers[0] + this.numbers[1],
         this.numbers[1] + this.numbers[2],
@@ -162,19 +165,19 @@ export default {
         this.showRowNumber = false;
         setTimeout(() => {
           this.showNextNumber();
-        }, 1000); // Время ожидания перед следующим числом
-      }, 1000); // Время отображения номера ряда
+        }, 1000);
+      }, 1000);
     },
     showNextNumber() {
       if (this.numIndex >= this.numbers.length) {
         this.numIndex = 0;
         this.rowIndex++;
         if (this.rowIndex >= 5) {
-          this.numbersDisplayed = true; // Устанавливаем флаг, что числа показаны
+          this.numbersDisplayed = true;
         }
         setTimeout(() => {
           this.startRow();
-        }, 1000); // Время ожидания перед переходом к следующему ряду
+        }, 1000);
         return;
       }
 
@@ -182,31 +185,77 @@ export default {
       this.numIndex++;
 
       if (this.numIndex === 1 && !this.startTimeValue) {
-        this.startTimeValue = Date.now(); // Запускаем секундомер со второго числа
+        this.startTimeValue = Date.now();
       }
 
       setTimeout(() => {
         this.currentNumber = null;
         setTimeout(() => {
           this.showNextNumber();
-        }, 1000); // Время ожидания перед показом следующего числа
-      }, 1000); // Время отображения числа
+        }, 1000);
+      }, 1000);
     },
     submitResults() {
       this.isSubmitted = true;
-      this.time = ((Date.now() - this.startTimeValue) / 1000).toFixed(2); // Останавливаем секундомер при нажатии на кнопку "Готово"
+      this.time = ((Date.now() - this.startTimeValue) / 1000).toFixed(2);
+      this.saveResults();
     },
     resetTest() {
       this.stage = "intro";
       this.message = "Приготовились";
       this.rowIndex = 0;
       this.numIndex = 0;
-      this.results = Array.from({ length: 5 }, () => Array(3).fill(null));
-      this.userInputs = Array.from({ length: 5 }, () => Array(3).fill(""));
+      this.results = Array.from({length: 5}, () => Array(3).fill(null));
+      this.userInputs = Array.from({length: 5}, () => Array(3).fill(""));
       this.startTimeValue = null;
       this.time = "0.00";
       this.isSubmitted = false;
-      this.numbersDisplayed = false; // Сбросить флаг
+      this.numbersDisplayed = false;
+    },
+    async saveResults() {
+      if (!this.authStore.user) {
+        alert("Пользователь не авторизован. Пожалуйста, войдите в систему.");
+        return;
+      }
+
+      const testId = 20;
+      const scorePercentage = parseFloat(this.accuracy);
+
+      if (isNaN(scorePercentage)) {
+        alert("Ошибка: некорректное значение точности.");
+        return;
+      }
+
+      console.log("Отправляемые данные:", {
+        test: testId,
+        user: this.authStore.user.id,
+        score_percentage: scorePercentage,
+      });
+
+      try {
+        const response = await fetch("http://127.0.0.1:8000/api/result/", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${localStorage.getItem("token")}`,
+          },
+          body: JSON.stringify({
+            test: testId,
+            user: this.authStore.user.id,
+            score_percentage: scorePercentage,
+          }),
+        });
+
+        if (response.ok) {
+          alert("Результаты успешно сохранены!");
+        } else {
+          const errorData = await response.json();
+          console.error("Ошибка сервера:", errorData);
+          alert(errorData.detail || "Ошибка при сохранении результатов");
+        }
+      } catch (error) {
+        console.error("Ошибка при отправке результатов:", error);
+      }
     },
   },
 };

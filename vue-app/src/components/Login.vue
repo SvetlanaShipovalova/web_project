@@ -68,15 +68,13 @@ const login = async () => {
            console.log("Успешный вход:", data);
 
 
-           // Сохраняем данные пользователя в authStore
            authStore.user = {
-               id: data.user_id,  // Предположим, что сервер возвращает user_id
+               id: data.user_id,
                username: username.value,
            };
-           authStore.token = data.token || "fake-token";  // Сохраняем токен, если он есть
+           authStore.token = data.token || "fake-token";
 
 
-           // Перенаправляем на страницу /tests
            router.push("/tests");
        } else {
            const errorData = await response.json();

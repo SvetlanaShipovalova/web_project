@@ -40,13 +40,17 @@
 
 <script>
 import Navbar from "../view/Navbar.vue";
-
+import { useAuthStore } from '../store/authStore';
 export default {
   components: { Navbar },
+  setup() {
+    const authStore = useAuthStore(); // Используем хранилище
+    return { authStore };
+  },
   data() {
     return {
       words: [
-        'ФАКТ', 'ТЕОРИЯ', 'БИЗНЕС', 'ДОЧИСЛО', 'КАРТЕ', 
+        'ФАКТ', 'ТЕОРИЯ', 'БИЗНЕС', 'ДОЧИСЛО', 'КАРТЕ',
         'МАРКЕТИНГ', 'ДАННЫЕ', 'ДЕНЬГИ', 'КЛЮЧ', 'КУСТ',
         'АНАЛИЗ', 'ДИАГНОЗ', 'ПРОБЛЕМА', 'РЕШЕНИЕ', 'ПЛАН',
         'КОНЦЕПЦИЯ', 'СТРАТЕГИЯ', 'МОДЕЛЬ', 'ИССЛЕДОВАНИЕ', 'РЕСУРС',
@@ -72,38 +76,38 @@ export default {
     },
     generateRandomText() {
       let text = '';
-      const minLength = 350; 
-      const usedWords = new Set(); 
-  
+      const minLength = 350;
+      const usedWords = new Set();
+
       while (text.length < minLength) {
         if (usedWords.size === this.words.length) {
           break;
         }
         const randomWord = this.words[Math.floor(Math.random() * this.words.length)];
         if (!usedWords.has(randomWord)) {
-          usedWords.add(randomWord); 
-          const randomPosition = Math.floor(Math.random() * (text.length + 1)); 
+          usedWords.add(randomWord);
+          const randomPosition = Math.floor(Math.random() * (text.length + 1));
           text = this.insertWord(randomWord, text, randomPosition);
         }
       }
       while (text.length < minLength) {
-        text += ' '; 
+        text += ' ';
       }
-      this.randomText = text.trim(); 
+      this.randomText = text.trim();
     },
     insertWord(word, currentText, position) {
       return currentText.slice(0, position) + word + currentText.slice(position);
     },
     checkWords() {
-      const regex = new RegExp(this.words.join('|'), 'g'); 
-      this.foundCount = (this.randomText.match(regex) || []).length; 
-      this.generateOptions(); 
+      const regex = new RegExp(this.words.join('|'), 'g');
+      this.foundCount = (this.randomText.match(regex) || []).length;
+      this.generateOptions();
     },
     generateOptions() {
       const correctAnswer = this.foundCount;
       const optionsSet = new Set([correctAnswer]);
       while (optionsSet.size < 4) {
-        const randomOption = Math.floor(Math.random() * (this.words.length + 1)); 
+        const randomOption = Math.floor(Math.random() * (this.words.length + 1));
         optionsSet.add(randomOption);
       }
       this.options = Array.from(optionsSet).sort((a, b) => a - b);
@@ -113,15 +117,50 @@ export default {
       if (option === this.foundCount) {
         this.feedback = 'Правильно!';
       } else {
-        this.feedback = 'Попробуйте снова, неверно.'; 
+        this.feedback = 'Попробуйте снова, неверно.';
       }
       this.isAnswered = true;
-this.calculateResults(); // Вычисляем результаты после ответа
+      this.calculateResults(); // Вычисляем результаты после ответа
     },
     calculateResults() {
       const elapsedTime = (Date.now() - this.startTime) / 1000; // Время в секундах
       this.time = elapsedTime.toFixed(2); // Ограничиваем до двух знаков после запятой
       this.accuracy = ((this.foundCount / this.words.length) * 100).toFixed(2); // Точность
+      this.saveResults(); // Сохраняем результаты после завершения игры
+    },
+    async saveResults() {
+      if (!this.authStore.user) {
+        alert("Пользователь не авторизован. Пожалуйста, войдите в систему.");
+        return;
+      }
+
+      const testId = 12; // ID двенадцатого теста
+      const scorePercentage = parseInt(this.accuracy, 10); // Преобразование в целое число
+
+      try {
+        const response = await fetch("http://127.0.0.1:8000/api/result/", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${localStorage.getItem("token")}`,
+          },
+          body: JSON.stringify({
+            test: testId,
+            user: this.authStore.user.id,
+            score_percentage: scorePercentage,
+          }),
+        });
+
+        if (response.ok) {
+          alert("Результаты успешно сохранены!");
+        } else {
+          const errorData = await response.json();
+          console.error("Ошибка сохранения:", errorData);
+          alert(errorData.error || "Ошибка при сохранении результатов");
+        }
+      } catch (error) {
+        console.error("Ошибка при отправке результатов:", error);
+      }
     },
     retryTest() {
       this.isAnswered = false; 

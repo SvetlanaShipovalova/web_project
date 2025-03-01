@@ -45,102 +45,153 @@
       </div>
     </div>
   </template>
-  
-  <script setup>
-  import Navbar from "../view/Navbar.vue";
-  </script>
-  
-  <script>
-  export default {
-    data() {
-      return {
-        testStarted: false,
-        testFinished: false,
-        timeLeft: 90,
-        timer: null,
-        targetNumbers: [],
-        gridNumbers: [],
-        selectedIndexes: [],
-        elapsedTime: 0,
-        accuracy: 0,
-        startTime: null,
-      };
+
+<script>
+import Navbar from "../view/Navbar.vue";
+import { useAuthStore } from '../store/authStore'; // Импортируем authStore
+export default {
+  components: { Navbar },
+  setup() {
+    const authStore = useAuthStore(); // Используем хранилище
+    return { authStore };
+  },
+  data() {
+    return {
+      testStarted: false,
+      testFinished: false,
+      timeLeft: 90,
+      timer: null,
+      targetNumbers: [],
+      gridNumbers: [],
+      selectedIndexes: [],
+      elapsedTime: 0,
+      accuracy: 0,
+      startTime: null,
+    };
+  },
+  computed: {
+    formattedTime() {
+      const minutes = Math.floor(this.timeLeft / 60).toString().padStart(2, "0");
+      const seconds = (this.timeLeft % 60).toString().padStart(2, "0");
+      return `${minutes}:${seconds}`;
     },
-    computed: {
-      formattedTime() {
-        const minutes = Math.floor(this.timeLeft / 60).toString().padStart(2, "0");
-        const seconds = (this.timeLeft % 60).toString().padStart(2, "0");
-        return `${minutes}:${seconds}`;
-      },
+  },
+  methods: {
+    startTest() {
+      this.testStarted = true;
+      this.testFinished = false;
+      this.targetNumbers = this.generateRandomNumbers(10);
+      this.gridNumbers = this.generateGridNumbers(100, this.targetNumbers);
+      this.selectedIndexes = [];
+      this.timeLeft = 90;
+      this.startTime = new Date();
+      this.startTimer();
     },
-    methods: {
-      startTest() {
-        this.testStarted = true;
-        this.testFinished = false;
-        this.targetNumbers = this.generateRandomNumbers(10);
-        this.gridNumbers = this.generateGridNumbers(100, this.targetNumbers);
-        this.selectedIndexes = [];
-        this.timeLeft = 90;
-        this.startTime = new Date();
-        this.startTimer();
-      },
-      startTimer() {
-        clearInterval(this.timer);
-        this.timer = setInterval(() => {
-          if (this.timeLeft > 0) {
-            this.timeLeft -= 1;
-          } else {
-            clearInterval(this.timer);
-            this.finishTest();
-          }
-        }, 1000);
-      },
-      generateRandomNumbers(count) {
-        const numbers = new Set();
-        while (numbers.size < count) {
-          numbers.add(Math.floor(100 + Math.random() * 900));
-        }
-        return Array.from(numbers);
-      },
-      generateGridNumbers(gridCount, targetNumbers) {
-        const gridNumbers = [...targetNumbers];
-        while (gridNumbers.length < gridCount) {
-          const randomNum = Math.floor(100 + Math.random() * 900);
-          if (!gridNumbers.includes(randomNum)) {
-            gridNumbers.push(randomNum);
-          }
-        }
-        return gridNumbers.sort(() => Math.random() - 0.5);
-      },
-      toggleCell(index) {
-        if (this.testFinished || this.timeLeft <= 0) return;
-        const selectedIndex = this.selectedIndexes.indexOf(index);
-        if (selectedIndex !== -1) {
-          this.selectedIndexes.splice(selectedIndex, 1);
-        } else {
-          this.selectedIndexes.push(index);
-        }
-      },
-      getCellClass(index) {
-        if (this.testFinished) {
-          const isCorrect = this.targetNumbers.includes(this.gridNumbers[index]);
-          return this.selectedIndexes.includes(index) ? (isCorrect ? 'correct' : 'wrong') : '';
-        }
-        return this.selectedIndexes.includes(index) ? 'highlighted' : '';
-      },
-      finishTest() {
-        this.testFinished = true;
-        clearInterval(this.timer);
-        this.elapsedTime = 90 - this.timeLeft;
-        const correctSelections = this.selectedIndexes.filter(index => this.targetNumbers.includes(this.gridNumbers[index])).length;
-        this.accuracy = correctSelections * 10;
-      },
-    },
-    beforeDestroy() {
+    startTimer() {
       clearInterval(this.timer);
+      this.timer = setInterval(() => {
+        if (this.timeLeft > 0) {
+          this.timeLeft -= 1;
+        } else {
+          clearInterval(this.timer);
+          this.finishTest();
+        }
+      }, 1000);
     },
-  };
-  </script>
+    generateRandomNumbers(count) {
+      const numbers = new Set();
+      while (numbers.size < count) {
+        numbers.add(Math.floor(100 + Math.random() * 900));
+      }
+      return Array.from(numbers);
+    },
+    generateGridNumbers(gridCount, targetNumbers) {
+      const gridNumbers = [...targetNumbers];
+      while (gridNumbers.length < gridCount) {
+        const randomNum = Math.floor(100 + Math.random() * 900);
+        if (!gridNumbers.includes(randomNum)) {
+          gridNumbers.push(randomNum);
+        }
+      }
+      return gridNumbers.sort(() => Math.random() - 0.5);
+    },
+    toggleCell(index) {
+      if (this.testFinished || this.timeLeft <= 0) return;
+      const selectedIndex = this.selectedIndexes.indexOf(index);
+      if (selectedIndex !== -1) {
+        this.selectedIndexes.splice(selectedIndex, 1);
+      } else {
+        this.selectedIndexes.push(index);
+      }
+    },
+    getCellClass(index) {
+      if (this.testFinished) {
+        const isCorrect = this.targetNumbers.includes(this.gridNumbers[index]);
+        return this.selectedIndexes.includes(index) ? (isCorrect ? 'correct' : 'wrong') : '';
+      }
+      return this.selectedIndexes.includes(index) ? 'highlighted' : '';
+    },
+    finishTest() {
+      this.testFinished = true;
+      clearInterval(this.timer);
+      this.elapsedTime = 90 - this.timeLeft;
+      const correctSelections = this.selectedIndexes.filter(index => this.targetNumbers.includes(this.gridNumbers[index])).length;
+      this.accuracy = correctSelections * 10;
+      this.saveResults(); // Сохраняем результаты
+    },
+    async saveResults() {
+      if (!this.authStore.user) {
+        alert("Пользователь не авторизован. Пожалуйста, войдите в систему.");
+        return;
+      }
+
+      const testId = 18; // ID восемнадцатого теста
+      const scorePercentage = parseFloat(this.accuracy); // Точность в процентах
+
+      // Проверка данных
+      if (isNaN(scorePercentage)) {
+        alert("Ошибка: некорректное значение точности.");
+        return;
+      }
+
+      // Логирование данных
+      console.log("Отправляемые данные:", {
+        test: testId,
+        user: this.authStore.user.id,
+        score_percentage: scorePercentage,
+      });
+
+      try {
+        const response = await fetch("http://127.0.0.1:8000/api/result/", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${localStorage.getItem("token")}`,
+          },
+          body: JSON.stringify({
+            test: testId, // Используем ID теста
+            user: this.authStore.user.id, // ID пользователя
+            score_percentage: scorePercentage, // Точность в процентах
+          }),
+        });
+
+        if (response.ok) {
+          alert("Результаты успешно сохранены!");
+        } else {
+          const errorData = await response.json();
+          console.error("Ошибка сервера:", errorData);
+          alert(errorData.error || "Ошибка при сохранении результатов");
+        }
+      } catch (error) {
+        console.error("Ошибка при отправке результатов:", error);
+      }
+    },
+  },
+  beforeDestroy() {
+    clearInterval(this.timer);
+  },
+};
+</script>
   
   <style scoped>
   .container {

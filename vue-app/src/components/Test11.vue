@@ -51,6 +51,10 @@
   </div>
 </template>
 
+<!--<script setup>-->
+<!--import Navbar from "../view/Navbar.vue";-->
+<!--</script>-->
+
 <script>
 import Navbar from "../view/Navbar.vue";
 import dogImage from "../assets/test_res/dog.png";
@@ -74,8 +78,15 @@ import ratSound from "../assets/test_res/rat.mp3";
 import pigSound from "../assets/test_res/pig.mp3";
 import duckSound from "../assets/test_res/duck.mp3";
 import wildBoarSound from "../assets/test_res/wild_boar.mp3";
+
+import { useAuthStore } from '../store/authStore';
+
 export default {
   components: { Navbar },
+  setup() {
+    const authStore = useAuthStore(); // Используем хранилище
+    return { authStore };
+  },
   data() {
     return {
       animals: [
@@ -116,7 +127,7 @@ export default {
   },
   computed: {
     accuracy() {
-      return this.matchedPairs.length / this.animals.length * 100 || 0;
+      return (this.matchedPairs.length / this.animals.length * 100).toFixed(2) || 0;
     },
   },
   methods: {
@@ -171,6 +182,7 @@ export default {
     endGame() {
       this.gameFinished = true;
       clearInterval(this.timer);
+      this.saveResults(); // Сохраняем результаты после завершения игры
     },
     restartGame() {
       this.score = 0;
@@ -187,6 +199,39 @@ export default {
       this.shuffleAnimals();
       this.shuffleSounds();
       this.startTimer();
+    },
+    async saveResults() {
+      if (!this.authStore.user) {
+        alert("Пользователь не авторизован. Пожалуйста, войдите в систему.");
+        return;
+      }
+
+      const testId = 11; // ID одиннадцатого теста
+      const scorePercentage = this.accuracy; // Точность в процентах
+
+      try {
+        const response = await fetch("http://127.0.0.1:8000/api/result/", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${localStorage.getItem("token")}`,
+          },
+          body: JSON.stringify({
+            test: testId, // Используем ID теста
+            user: this.authStore.user.id, // ID пользователя
+            score_percentage: parseFloat(scorePercentage), // Преобразуем в число
+          }),
+        });
+
+        if (response.ok) {
+          alert("Результаты успешно сохранены!");
+        } else {
+          const errorData = await response.json();
+          alert(errorData.error || "Ошибка при сохранении результатов");
+        }
+      } catch (error) {
+        console.error("Ошибка при отправке результатов:", error);
+      }
     },
   },
   mounted() {

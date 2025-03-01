@@ -6,7 +6,7 @@
 import { defineAsyncComponent, computed, defineProps } from 'vue';
 
 const props = defineProps({
-  name: { 
+  name: {
     type: String,
     required: true
   }

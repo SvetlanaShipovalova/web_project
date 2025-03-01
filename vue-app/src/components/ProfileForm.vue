@@ -125,7 +125,7 @@
 </template>
 
 <script setup>
-import { ref, onMounted } from "vue";
+import { ref } from "vue";
 import Navbar from "../view/Navbar.vue";
 import { useAuthStore } from "../store/authStore";
 
@@ -133,32 +133,57 @@ const authStore = useAuthStore();
 const isEditing = ref(false);
 
 const form = ref({
-  age: null, mood: null, education: "", speciality: "", residence: "",
-  height: null, weight: null, lead_hand: "", diseases: "", sport: "",
-  smoking: false, alcohol: "", insomnia: false, gaming: false, current_health: null
+  age: 25,
+  mood: 3,
+  education: "Высшее",
+  speciality: "Программист",
+  residence: "Москва",
+  height: 175,
+  weight: 70,
+  lead_hand: "",
+  diseases: "",
+  sport: "",
+  smoking: false,
+  alcohol: "Редко",
+  insomnia: false,
+  gaming: true,
+  current_health: null
 });
 
 const emotions = ["😢", "😟", "😐", "😊", "😁"];
 
-const fetchProfile = async () => {
-  const response = await fetch("http://127.0.0.1:8000/api/profile/");
-  form.value = await response.json();
-};
-
 const saveProfile = async () => {
-  await fetch("http://127.0.0.1:8000/api/profile/", {
-    method: "PATCH",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify(form.value),
-  });
-  isEditing.value = false;
+  if (!authStore.user || !authStore.user.id) {
+    alert("Пользователь не авторизован. Пожалуйста, войдите в систему.");
+    return;
+  }
+
+  const data = {
+    user: authStore.user.id,
+    ...form.value,
+  };
+
+  try {
+    const response = await fetch("http://127.0.0.1:8000/api/profile/", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(data),
+    });
+
+    if (response.ok) {
+      alert("Анкета успешно сохранена!");
+      isEditing.value = false;
+    } else {
+      const errorData = await response.json();
+      alert(errorData.error || "Ошибка при сохранении анкеты");
+    }
+  } catch (error) {
+    console.error("Ошибка при отправке данных:", error);
+    alert("Ошибка при отправке данных");
+  }
 };
 
-const editProfile = () => isEditing.value = true;
-onMounted(fetchProfile);
+const editProfile = () => {
+  isEditing.value = true;
+};
 </script>
-
-<style scoped>
-.emoji { font-size: 2rem; cursor: pointer; }
-.emoji.active { transform: scale(1.2); }
-</style>

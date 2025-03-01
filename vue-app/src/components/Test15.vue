@@ -47,6 +47,7 @@
 
 <script>
 import Navbar from "../view/Navbar.vue";
+import { useAuthStore } from '../store/authStore';
 import m_1 from '../assets/test_res/m_1.png';
 import m_1_1 from '../assets/test_res/m_1.1.png';
 import m_1_2 from '../assets/test_res/m_1.2.png';
@@ -110,6 +111,10 @@ import m_15_3 from '../assets/test_res/m_15.3.png';
 
 export default {
   components: { Navbar },
+  setup() {
+    const authStore = useAuthStore(); // Используем хранилище
+    return { authStore };
+  },
   data() {
     return {
       currentQuestionIndex: 0,
@@ -241,6 +246,7 @@ export default {
         } else {
           clearInterval(this.timer);
           this.currentQuestionIndex = this.questions.length; // Завершение теста
+          this.saveResults(); // Сохраняем результаты
         }
       }, 1000);
     },
@@ -256,7 +262,7 @@ export default {
       } else {
         clearInterval(this.timer);
         this.currentQuestionIndex = this.questions.length; // Завершение теста
-        
+        this.saveResults(); // Сохраняем результаты
       }
     },
     restartTest() {
@@ -274,6 +280,39 @@ export default {
       else if (this.age >= 36 && this.age <= 45) return 0.7;
       else if (this.age >= 46) return 0.6;
       else return 1.0; // Для возрастов до 18 лет
+    },
+    async saveResults() {
+      if (!this.authStore.user) {
+        alert("Пользователь не авторизован. Пожалуйста, войдите в систему.");
+        return;
+      }
+
+      const testId = 15; // ID пятнадцатого теста
+      const scorePercentage = parseFloat(this.accuracy); // Точность в процентах
+
+      try {
+        const response = await fetch("http://127.0.0.1:8000/api/result/", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${localStorage.getItem("token")}`,
+          },
+          body: JSON.stringify({
+            test: testId, // Используем ID теста
+            user: this.authStore.user.id, // ID пользователя
+            score_percentage: scorePercentage, // Точность в процентах
+          }),
+        });
+
+        if (response.ok) {
+          alert("Результаты успешно сохранены!");
+        } else {
+          const errorData = await response.json();
+          alert(errorData.error || "Ошибка при сохранении результатов");
+        }
+      } catch (error) {
+        console.error("Ошибка при отправке результатов:", error);
+      }
     },
   },
   beforeUnmount() {

@@ -29,6 +29,7 @@
 
 <script>
 import Navbar from "../view/Navbar.vue";
+import { useAuthStore } from '../store/authStore';
 import img_1 from '../assets/test_res/img_1.png';
 import img_2 from '../assets/test_res/img_2.png';
 import img_3 from '../assets/test_res/img_3.png';
@@ -40,6 +41,10 @@ import img_8 from '../assets/test_res/img_8.png';
 
 export default {
   components: { Navbar },
+  setup() {
+    const authStore = useAuthStore(); // Используем хранилище
+    return { authStore };
+  },
   data() {
     return {
       images: [
@@ -58,8 +63,8 @@ export default {
       timer: 60,
       totalSpots: 8,
       foundSpots: 0,
-      time: 0, // Новое свойство для хранения затраченного времени
-      accuracy: 100, // Новое свойство для процента прохождения
+      time: 0, // Время, затраченное на игру
+      accuracy: 0, // Процент прохождения
     };
   },
   methods: {
@@ -79,12 +84,12 @@ export default {
 
       const correctSpot = this.images[index].correctSpot;
       const errorMargin = 30;
-      // зона, где клик считается корректным
+      // Зона, где клик считается корректным
       if (
-          clickX >= correctSpot.x - errorMargin &&
-          clickX <= correctSpot.x + errorMargin &&
-          clickY >= correctSpot.y - errorMargin &&
-          clickY <= correctSpot.y + errorMargin
+        clickX >= correctSpot.x - errorMargin &&
+        clickX <= correctSpot.x + errorMargin &&
+        clickY >= correctSpot.y - errorMargin &&
+        clickY <= correctSpot.y + errorMargin
       ) {
         if (!this.highlightedSpots[index]) {
           this.highlightedSpots = {
@@ -116,6 +121,8 @@ export default {
         } else {
           this.time = 60 - this.timer; // Считаем затраченное время
         }
+        this.accuracy = ((this.foundSpots / this.totalSpots) * 100).toFixed(2); // Рассчитываем процент прохождения
+        this.saveResults(); // Сохраняем результаты после завершения игры
       }
     },
     startTimer() {
@@ -128,7 +135,40 @@ export default {
           this.time = 60; // Устанавливаем общее время на 60 секунд, если время вышло
         }
       }, 1000);
-    }
+    },
+    async saveResults() {
+      if (!this.authStore.user) {
+        alert("Пользователь не авторизован. Пожалуйста, войдите в систему.");
+        return;
+      }
+
+      const testId = 14; // ID четырнадцатого теста
+      const scorePercentage = parseFloat(this.accuracy); // Точность в процентах
+
+      try {
+        const response = await fetch("http://127.0.0.1:8000/api/result/", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${localStorage.getItem("token")}`,
+          },
+          body: JSON.stringify({
+            test: testId, // Используем ID теста
+            user: this.authStore.user.id, // ID пользователя
+            score_percentage: scorePercentage, // Точность в процентах
+          }),
+        });
+
+        if (response.ok) {
+          alert("Результаты успешно сохранены!");
+        } else {
+          const errorData = await response.json();
+          alert(errorData.error || "Ошибка при сохранении результатов");
+        }
+      } catch (error) {
+        console.error("Ошибка при отправке результатов:", error);
+      }
+    },
   },
   mounted() {
     this.startTimer();
