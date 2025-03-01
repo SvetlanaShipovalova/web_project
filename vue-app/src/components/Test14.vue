@@ -6,6 +6,7 @@
       <div class="image-checker">
         <h2>Найдите неточность на картинке</h2>
         <button v-if="!gameStarted" @click="startGame">Начать игру</button>
+        <button v-if="gameStarted && !gameEnded" @click="endGame">Закончить игру</button> 
         <div v-if="gameStarted">
           <div class="image-container-wrapper">
             <div v-for="(image, index) in images" :key="index" class="image-container">
@@ -13,11 +14,11 @@
               <div v-if="highlightedSpots[index]" class="highlight" :style="highlightedSpots[index].style"></div>
             </div>
           </div>
-          <p v-if="!gameEnded">{{ timer }} секунд осталось</p> <!-- Таймер выводится только если игра не закончена -->
+          <p v-if="!gameEnded">{{ timer }} секунд осталось</p>
           <p v-if="gameEnded">Игра окончена!</p>
-          <p v-if="gameEnded">Вы нашли {{ foundSpots }} из {{ totalSpots }} отличий.</p>
-          <p v-if="gameEnded">Время, затраченное на игру: {{ time }} секунд.</p> <!-- Выводим затраченное время -->
-          <p v-if="gameEnded">Процент прохождения игры: {{ accuracy }}%</p> <!-- Выводим процент прохождения -->
+          <p v-if="gameEnded">Попаданий: {{ number_all_answers }} из {{ number_correct_answers }} возможных отличий.</p>
+          <p v-if="gameEnded">Время, затраченное на игру: {{ time }}</p>
+          <p v-if="gameEnded">Точность: {{ accuracy }}%</p>
           <button v-if="gameEnded" @click="startGame">Начать заново</button>
         </div>
         <br>
@@ -42,7 +43,7 @@ import img_8 from '../assets/test_res/img_8.png';
 export default {
   components: { Navbar },
   setup() {
-    const authStore = useAuthStore(); // Используем хранилище
+    const authStore = useAuthStore();
     return { authStore };
   },
   data() {
@@ -61,10 +62,10 @@ export default {
       gameEnded: false,
       gameStarted: false,
       timer: 60,
-      totalSpots: 8,
-      foundSpots: 0,
-      time: 0, // Время, затраченное на игру
-      accuracy: 0, // Процент прохождения
+      time: "00:00:00",
+      accuracy: 0,
+      number_all_answers: 0,
+      number_correct_answers: 8,
     };
   },
   methods: {
@@ -72,19 +73,22 @@ export default {
       this.gameStarted = true;
       this.gameEnded = false;
       this.timer = 60;
-      this.time = 0; // Сброс времени при начале новой игры
+      this.time = "00:00:00";
       this.highlightedSpots = {};
-      this.foundSpots = 0;
+      this.number_all_answers = 0;
+      this.number_correct_answers = this.images.length;
       this.startTimer();
     },
     checkSpot(index, event) {
+      if (this.gameEnded) return;
+
       const rect = event.target.getBoundingClientRect();
       const clickX = event.clientX - rect.left;
       const clickY = event.clientY - rect.top;
 
       const correctSpot = this.images[index].correctSpot;
       const errorMargin = 30;
-      // Зона, где клик считается корректным
+
       if (
         clickX >= correctSpot.x - errorMargin &&
         clickX <= correctSpot.x + errorMargin &&
@@ -107,22 +111,15 @@ export default {
               }
             }
           };
-          this.foundSpots++;
-          this.checkGameEnd();
+          this.number_all_answers++;
         }
       }
+
+      this.checkGameEnd();
     },
     checkGameEnd() {
-      if (this.foundSpots === this.totalSpots || this.timer <= 0) {
-        this.gameEnded = true;
-        clearInterval(this.timerInterval);
-        if (this.timer <= 0) {
-          this.time = 60; // Если таймер закончился, устанавливаем общее время на 60 секунд
-        } else {
-          this.time = 60 - this.timer; // Считаем затраченное время
-        }
-        this.accuracy = ((this.foundSpots / this.totalSpots) * 100).toFixed(2); // Рассчитываем процент прохождения
-        this.saveResults(); // Сохраняем результаты после завершения игры
+      if (this.number_all_answers === this.number_correct_answers || this.timer <= 0) {
+        this.endGame();
       }
     },
     startTimer() {
@@ -130,11 +127,31 @@ export default {
         if (this.timer > 0) {
           this.timer--;
         } else {
-          this.gameEnded = true;
-          clearInterval(this.timerInterval);
-          this.time = 60; // Устанавливаем общее время на 60 секунд, если время вышло
+          this.endGame();
         }
       }, 1000);
+    },
+    endGame() {
+      if (this.gameEnded) return;
+
+      this.gameEnded = true;
+      clearInterval(this.timerInterval);
+
+      const elapsedSeconds = 60 - this.timer;
+      this.time = this.formatTime(elapsedSeconds);
+
+      // Корректный расчет точности
+      this.accuracy = this.number_correct_answers > 0 
+        ? ((this.number_all_answers / this.number_correct_answers) * 100).toFixed(2) 
+        : "0.00";
+
+      this.saveResults();
+    },
+    formatTime(seconds) {
+      const hours = String(Math.floor(seconds / 3600)).padStart(2, '0');
+      const minutes = String(Math.floor((seconds % 3600) / 60)).padStart(2, '0');
+      const sec = String(seconds % 60).padStart(2, '0');
+      return `${hours}:${minutes}:${sec}`;
     },
     async saveResults() {
       if (!this.authStore.user) {
@@ -142,8 +159,8 @@ export default {
         return;
       }
 
-      const testId = 14; // ID четырнадцатого теста
-      const scorePercentage = parseFloat(this.accuracy); // Точность в процентах
+      const testId = 14;
+      const scorePercentage = parseFloat(this.accuracy);
 
       try {
         const response = await fetch("http://127.0.0.1:8000/api/result/", {
@@ -153,25 +170,24 @@ export default {
             Authorization: `Bearer ${localStorage.getItem("token")}`,
           },
           body: JSON.stringify({
-            test: testId, // Используем ID теста
-            user: this.authStore.user.id, // ID пользователя
-            score_percentage: scorePercentage, // Точность в процентах
+            test: testId,
+            user: this.authStore.user.id,
+            score_percentage: scorePercentage,
+            time_spent: this.time,
+            number_all_answers: this.number_all_answers,
+            number_correct_answers: this.number_correct_answers
           }),
         });
 
         if (response.ok) {
           alert("Результаты успешно сохранены!");
         } else {
-          const errorData = await response.json();
-          alert(errorData.error || "Ошибка при сохранении результатов");
+          alert("Ошибка при сохранении результатов");
         }
       } catch (error) {
         console.error("Ошибка при отправке результатов:", error);
       }
-    },
-  },
-  mounted() {
-    this.startTimer();
+    }
   },
   beforeUnmount() {
     clearInterval(this.timerInterval);

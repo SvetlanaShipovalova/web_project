@@ -1,10 +1,10 @@
 <template>
-<Navbar />
+  <Navbar />
   <div class="memory-test">
     <h2>{{ $route.params.name }}</h2>
     <p class="description">
       Внимательно смотрите на экран и запоминайте появляющиеся на нем цифры для дальнейшего сложения.
-      Напоминаю: ваша цель сложить первую цифру со второй, вторую цифру с третьей, третью с четвертой. Результаты введите в таблицу ниже.
+      Ваша цель — сложить первую цифру со второй, вторую с третьей и так далее. Введите ответы в таблицу ниже.
     </p>
 
     <!-- Стартовая кнопка -->
@@ -29,7 +29,6 @@
               type="number"
               v-model="userInputs[rowIndex][colIndex]"
               :disabled="isSubmitted"
-              @input="startTime(rowIndex, colIndex)"
             />
           </td>
         </tr>
@@ -39,39 +38,11 @@
 
     <!-- Результаты -->
     <div v-if="isSubmitted" class="results">
-      <div class="result-tables">
-        <div class="result-header">Правильный ответ</div>
-        <div class="result-header">Ваш ответ</div>
-      </div>
-      <div class="result-tables">
-        <!-- Таблица правильных ответов -->
-        <table class="correct-table">
-          <tr v-for="(row, rowIndex) in results" :key="'result-row-' + rowIndex">
-            <td v-for="(value, colIndex) in row" :key="'correct-' + colIndex">
-              {{ value }}
-            </td>
-          </tr>
-        </table>
-
-        <!-- Таблица пользовательских ответов -->
-        <table class="user-table">
-          <tr v-for="(row, rowIndex) in userInputs" :key="'input-row-' + rowIndex">
-            <td
-              v-for="(value, colIndex) in row"
-              :key="'input-' + colIndex"
-              :class="{ correct: value == results[rowIndex][colIndex] }"
-            >
-              {{ value }}
-            </td>
-          </tr>
-        </table>
-      </div>
-      <!-- Точность и время -->
       <div class="accuracy">
         <p>Точность: {{ accuracy }}%</p>
-        <p>Время выполнения: {{ time }} секунд</p>
+        <p>Время выполнения: {{ time }}</p>
+        <p>Правильные ответы: {{ number_all_answers }} из {{ number_correct_answers }}</p>
       </div>
-      <!-- Кнопка начать заново -->
       <div class="restart-btn-container">
         <button @click="resetTest" class="restart-btn">Начать заново</button>
       </div>
@@ -82,15 +53,13 @@
 
 <script>
 import Navbar from "../view/Navbar.vue";
-import {useAuthStore} from '../store/authStore';
+import { useAuthStore } from '../store/authStore';
 
 export default {
-  components: {
-    Navbar
-  },
+  components: { Navbar },
   setup() {
     const authStore = useAuthStore();
-    return {authStore};
+    return { authStore };
   },
   data() {
     return {
@@ -99,15 +68,18 @@ export default {
       currentNumber: null,
       currentRowNumber: null,
       showRowNumber: false,
-      results: Array.from({length: 5}, () => Array(3).fill(null)),
-      userInputs: Array.from({length: 5}, () => Array(3).fill("")),
+      results: Array.from({ length: 5 }, () => Array(3).fill(null)),
+      userInputs: Array.from({ length: 5 }, () => Array(3).fill("")),
       isSubmitted: false,
       rowIndex: 0,
       numIndex: 0,
       numbers: [],
       numbersDisplayed: false,
       startTimeValue: null,
-      time: "0.00",
+      timeElapsed: 0,
+      time: "00:00:00",
+      number_all_answers: 0,
+      number_correct_answers: 15,
     };
   },
   computed: {
@@ -123,6 +95,7 @@ export default {
         });
       });
 
+      this.number_all_answers = correctAnswers;
       return ((correctAnswers / totalCells) * 100).toFixed(2);
     },
   },
@@ -149,7 +122,7 @@ export default {
 
       this.stage = "numbers";
       this.currentRowNumber = this.rowIndex + 1;
-      this.numbers = Array.from({length: 4}, () => Math.floor(Math.random() * 9) + 1);
+      this.numbers = Array.from({ length: 4 }, () => Math.floor(Math.random() * 9) + 1);
       this.results[this.rowIndex] = [
         this.numbers[0] + this.numbers[1],
         this.numbers[1] + this.numbers[2],
@@ -197,7 +170,8 @@ export default {
     },
     submitResults() {
       this.isSubmitted = true;
-      this.time = ((Date.now() - this.startTimeValue) / 1000).toFixed(2);
+      this.timeElapsed = ((Date.now() - this.startTimeValue) / 1000);
+      this.time = new Date(this.timeElapsed * 1000).toISOString().substr(11, 8);
       this.saveResults();
     },
     resetTest() {
@@ -205,32 +179,19 @@ export default {
       this.message = "Приготовились";
       this.rowIndex = 0;
       this.numIndex = 0;
-      this.results = Array.from({length: 5}, () => Array(3).fill(null));
-      this.userInputs = Array.from({length: 5}, () => Array(3).fill(""));
+      this.results = Array.from({ length: 5 }, () => Array(3).fill(null));
+      this.userInputs = Array.from({ length: 5 }, () => Array(3).fill(""));
       this.startTimeValue = null;
-      this.time = "0.00";
+      this.timeElapsed = 0;
+      this.time = "00:00:00";
       this.isSubmitted = false;
       this.numbersDisplayed = false;
     },
     async saveResults() {
       if (!this.authStore.user) {
-        alert("Пользователь не авторизован. Пожалуйста, войдите в систему.");
+        alert("Пользователь не авторизован. Войдите в систему.");
         return;
       }
-
-      const testId = 20;
-      const scorePercentage = parseFloat(this.accuracy);
-
-      if (isNaN(scorePercentage)) {
-        alert("Ошибка: некорректное значение точности.");
-        return;
-      }
-
-      console.log("Отправляемые данные:", {
-        test: testId,
-        user: this.authStore.user.id,
-        score_percentage: scorePercentage,
-      });
 
       try {
         const response = await fetch("http://127.0.0.1:8000/api/result/", {
@@ -240,9 +201,12 @@ export default {
             Authorization: `Bearer ${localStorage.getItem("token")}`,
           },
           body: JSON.stringify({
-            test: testId,
+            test: 20,
             user: this.authStore.user.id,
-            score_percentage: scorePercentage,
+            score_percentage: parseFloat(this.accuracy),
+            time: this.time,
+            number_all_answers: this.number_all_answers,
+            number_correct_answers: this.number_correct_answers,
           }),
         });
 
@@ -250,8 +214,7 @@ export default {
           alert("Результаты успешно сохранены!");
         } else {
           const errorData = await response.json();
-          console.error("Ошибка сервера:", errorData);
-          alert(errorData.detail || "Ошибка при сохранении результатов");
+          alert(errorData.error || "Ошибка при сохранении результатов");
         }
       } catch (error) {
         console.error("Ошибка при отправке результатов:", error);

@@ -15,7 +15,7 @@
           <div v-if="foundCount !== null" class="quiz">
             <h2>Сколько слов было найдено?</h2>
             <div v-for="option in options" :key="option" class="option">
-              <button @click="checkAnswer(option)">{{ option }}</button>
+              <button @click="checkAnswer(option)" :disabled="isAnswered">{{ option }}</button>
             </div>
             <p v-if="selectedOption !== null" class="feedback">
               {{ feedback }}
@@ -25,8 +25,9 @@
             Вы нашли {{ foundCount }} слов(а).
           </p>
           <div v-if="isAnswered" class="results">
-            <p>Время выполнения теста: {{ time }} секунд</p>
+            <p>Время выполнения теста: {{ time }}</p>
             <p>Точность: {{ accuracy }}%</p>
+            <p>Найдено слов: {{ number_correct_answers }} из {{ number_all_answers }}</p>
           </div>
           <button v-if="isAnswered && feedback === 'Правильно!'" class="retry-button" @click="retryTest">
             Пройти тест еще раз
@@ -64,8 +65,11 @@ export default {
       feedback: '',
       isAnswered: false,
       testStarted: false,
-      time: 0, // Время выполнения теста
-      accuracy: 0 // Точность теста
+      time: "00:00:00", // Время выполнения теста в формате HH:MM:SS
+      accuracy: 0, // Точность теста
+      number_all_answers: 0, // Количество найденных слов (отгаданных)
+number_correct_answers: 0, // Общее количество вопросов (слов в тесте)
+
     };
   },
   methods: {
@@ -99,10 +103,11 @@ export default {
       return currentText.slice(0, position) + word + currentText.slice(position);
     },
     checkWords() {
-      const regex = new RegExp(this.words.join('|'), 'g');
-      this.foundCount = (this.randomText.match(regex) || []).length;
-      this.generateOptions();
-    },
+  const regex = new RegExp(this.words.join('|'), 'g');
+  this.foundCount = (this.randomText.match(regex) || []).length;
+  this.number_all_answers = this.foundCount; // Общее количество слов в раунде
+  this.generateOptions();
+},
     generateOptions() {
       const correctAnswer = this.foundCount;
       const optionsSet = new Set([correctAnswer]);
@@ -113,21 +118,35 @@ export default {
       this.options = Array.from(optionsSet).sort((a, b) => a - b);
     },
     checkAnswer(option) {
-      this.selectedOption = option;
-      if (option === this.foundCount) {
-        this.feedback = 'Правильно!';
-      } else {
-        this.feedback = 'Попробуйте снова, неверно.';
-      }
-      this.isAnswered = true;
-      this.calculateResults(); // Вычисляем результаты после ответа
-    },
-    calculateResults() {
-      const elapsedTime = (Date.now() - this.startTime) / 1000; // Время в секундах
-      this.time = elapsedTime.toFixed(2); // Ограничиваем до двух знаков после запятой
-      this.accuracy = ((this.foundCount / this.words.length) * 100).toFixed(2); // Точность
-      this.saveResults(); // Сохраняем результаты после завершения игры
-    },
+  this.selectedOption = option;
+  this.number_correct_answers = option; // Запоминаем выбранный пользователем вариант
+
+  if (option === this.foundCount) {
+    this.feedback = 'Правильно!';
+  } else {
+    this.feedback = 'Попробуйте снова, неверно.';
+  }
+
+  this.isAnswered = true;
+  this.calculateResults();
+}
+,
+
+calculateResults() {
+  const elapsedTime = Math.floor((Date.now() - this.startTime) / 1000);
+  this.time = this.formatTime(elapsedTime);
+
+  this.accuracy = ((this.number_correct_answers / this.number_all_answers) * 100).toFixed(2);
+
+  this.saveResults();
+},
+    formatTime(seconds) {
+  const hours = String(Math.floor(seconds / 3600)).padStart(2, '0');
+  const minutes = String(Math.floor((seconds % 3600) / 60)).padStart(2, '0');
+  const sec = String(seconds % 60).padStart(2, '0');
+  return `${hours}:${minutes}:${sec}`; // Формат строго 00:00:00
+},
+
     async saveResults() {
       if (!this.authStore.user) {
         alert("Пользователь не авторизован. Пожалуйста, войдите в систему.");
@@ -145,10 +164,14 @@ export default {
             Authorization: `Bearer ${localStorage.getItem("token")}`,
           },
           body: JSON.stringify({
-            test: testId,
-            user: this.authStore.user.id,
-            score_percentage: scorePercentage,
-          }),
+  test: testId,
+  user: this.authStore.user.id,
+  score_percentage: scorePercentage,
+  time_spent: this.time, // Формат времени HH:MM:SS
+  number_all_answers: this.number_all_answers, // Сколько отгадал
+  number_correct_answers: this.number_correct_answers // Сколько всего вопросов
+}),
+
         });
 
         if (response.ok) {

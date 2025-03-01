@@ -1,58 +1,60 @@
 <template>
-    <Navbar />
-    <div class="container mt-5 text-center">
-      <h2>{{ $route.params.name }}</h2>
-      <div id="app">
-        <!-- Начальный экран -->
-        <div v-if="!testStarted && !testFinished">
-          <h1>Тест на избирательность внимания</h1>
-          <p>
-            Вы увидите перед собой список из 10 трехзначных чисел, а ниже таблицу из 100 ячеек с трехзначными числами. 
-            Ваша задача — как можно быстрее найти и выделить эти 10 чисел.
-          </p>
-          <button class="start-button btn btn-primary" @click="startTest">Начать</button>
-        </div>
-  
-        <!-- Игровой экран -->
-        <div v-else-if="testStarted">
-          <p>Оставшееся время: {{ formattedTime }}</p>
-          <div>
-            <h2>Заданные числа:</h2>
-            <div class="numbers-row">
-              <span v-for="(number, index) in targetNumbers" :key="index">{{ number }}</span>
-            </div>
-          </div>
-          <div class="grid">
-            <div
-              v-for="(cell, index) in gridNumbers"
-              :key="index"
-              :class="getCellClass(index)"
-              @click="toggleCell(index)"
-            >
-              {{ cell }}
-            </div>
-          </div>
-          <button v-if="timeLeft > 0" @click="finishTest" class="btn btn-success mt-3">Готово</button>
-        </div>
-  
-        <!-- Финальный экран -->
-        <div v-if="testFinished" class="end-message">
-          <h3>Тест завершен!</h3>
-          <p>Время выполнения: {{ elapsedTime }} секунд</p>
-          <p>Точность: {{ accuracy }}%</p>
-        </div>
-        <router-link to="/tests" class="btn btn-secondary">Назад к тестам</router-link>
+  <Navbar />
+  <div class="container mt-5 text-center">
+    <h2>{{ $route.params.name }}</h2>
+    <div id="app">
+      <!-- Начальный экран -->
+      <div v-if="!testStarted && !testFinished">
+        <h1>Тест на избирательность внимания</h1>
+        <p>
+          Вы увидите перед собой <strong>10</strong> заданных чисел, а ниже таблицу из {{ number_total_numbers }} ячеек с трехзначными числами. 
+          Ваша задача — как можно быстрее найти и выделить эти <strong>10 чисел</strong>.
+        </p>
+        <button class="start-button btn btn-primary" @click="startTest">Начать</button>
       </div>
+
+      <!-- Игровой экран -->
+      <div v-else-if="testStarted">
+        <p>Оставшееся время: {{ formattedTime }}</p>
+        <div>
+          <h2>Заданные числа:</h2>
+          <div class="numbers-row">
+            <span v-for="(number, index) in targetNumbers" :key="index">{{ number }}</span>
+          </div>
+        </div>
+        <div class="grid">
+          <div
+            v-for="(cell, index) in gridNumbers"
+            :key="index"
+            :class="getCellClass(index)"
+            @click="toggleCell(index)"
+          >
+            {{ cell }}
+          </div>
+        </div>
+        <button v-if="timeLeft > 0" @click="finishTest" class="btn btn-success mt-3">Готово</button>
+      </div>
+
+      <!-- Финальный экран -->
+      <div v-if="testFinished" class="end-message">
+        <h3>Тест завершен!</h3>
+        <p>Время выполнения: {{ time }}</p>
+        <p>Правильные ответы: {{ number_all_answers }} из {{ number_correct_answers }}</p>
+        <p>Точность: {{ accuracy }}%</p>
+      </div>
+      <router-link to="/tests" class="btn btn-secondary">Назад к тестам</router-link>
     </div>
-  </template>
+  </div>
+</template>
 
 <script>
 import Navbar from "../view/Navbar.vue";
-import { useAuthStore } from '../store/authStore'; // Импортируем authStore
+import { useAuthStore } from '../store/authStore';
+
 export default {
   components: { Navbar },
   setup() {
-    const authStore = useAuthStore(); // Используем хранилище
+    const authStore = useAuthStore();
     return { authStore };
   },
   data() {
@@ -65,7 +67,10 @@ export default {
       gridNumbers: [],
       selectedIndexes: [],
       elapsedTime: 0,
-      accuracy: 0,
+      time: "00:00:00",
+      number_all_answers: 0, // Количество правильных ответов пользователя
+      number_correct_answers: 10, // Фиксированное количество заданных чисел
+      number_total_numbers: 100, // Общее количество представленных чисел
       startTime: null,
     };
   },
@@ -77,14 +82,20 @@ export default {
     },
   },
   methods: {
+    formatTime(seconds) {
+      const hours = Math.floor(seconds / 3600).toString().padStart(2, "0");
+      const minutes = Math.floor((seconds % 3600) / 60).toString().padStart(2, "0");
+      const sec = (seconds % 60).toString().padStart(2, "0");
+      return `${hours}:${minutes}:${sec}`;
+    },
     startTest() {
       this.testStarted = true;
       this.testFinished = false;
-      this.targetNumbers = this.generateRandomNumbers(10);
-      this.gridNumbers = this.generateGridNumbers(100, this.targetNumbers);
+      this.targetNumbers = this.generateRandomNumbers(this.number_correct_answers);
+      this.gridNumbers = this.generateGridNumbers(this.number_total_numbers, this.targetNumbers);
       this.selectedIndexes = [];
       this.timeLeft = 90;
-      this.startTime = new Date();
+      this.startTime = Date.now();
       this.startTimer();
     },
     startTimer() {
@@ -134,32 +145,17 @@ export default {
     finishTest() {
       this.testFinished = true;
       clearInterval(this.timer);
-      this.elapsedTime = 90 - this.timeLeft;
-      const correctSelections = this.selectedIndexes.filter(index => this.targetNumbers.includes(this.gridNumbers[index])).length;
-      this.accuracy = correctSelections * 10;
-      this.saveResults(); // Сохраняем результаты
+      this.elapsedTime = Math.floor((Date.now() - this.startTime) / 1000);
+      this.time = this.formatTime(this.elapsedTime);
+      this.number_all_answers = this.selectedIndexes.filter(index => this.targetNumbers.includes(this.gridNumbers[index])).length;
+      this.accuracy = ((this.number_all_answers / this.number_correct_answers) * 100).toFixed(2);
+      this.saveResults();
     },
     async saveResults() {
       if (!this.authStore.user) {
         alert("Пользователь не авторизован. Пожалуйста, войдите в систему.");
         return;
       }
-
-      const testId = 18; // ID восемнадцатого теста
-      const scorePercentage = parseFloat(this.accuracy); // Точность в процентах
-
-      // Проверка данных
-      if (isNaN(scorePercentage)) {
-        alert("Ошибка: некорректное значение точности.");
-        return;
-      }
-
-      // Логирование данных
-      console.log("Отправляемые данные:", {
-        test: testId,
-        user: this.authStore.user.id,
-        score_percentage: scorePercentage,
-      });
 
       try {
         const response = await fetch("http://127.0.0.1:8000/api/result/", {
@@ -169,9 +165,12 @@ export default {
             Authorization: `Bearer ${localStorage.getItem("token")}`,
           },
           body: JSON.stringify({
-            test: testId, // Используем ID теста
-            user: this.authStore.user.id, // ID пользователя
-            score_percentage: scorePercentage, // Точность в процентах
+            test: 18, // ID теста
+            user: this.authStore.user.id,
+            score_percentage: parseFloat(this.accuracy),
+            time: this.time,
+            number_all_answers: this.number_all_answers,
+            number_correct_answers: this.number_correct_answers,
           }),
         });
 

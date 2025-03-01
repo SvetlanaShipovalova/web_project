@@ -18,7 +18,6 @@
         <button class="start-button btn btn-primary" @click="startGame">Начать игру</button>
       </div>
 
-      <!-- Игровой экран -->
       <div v-else-if="gameStarted">
         <p>Прошедшее время: {{ time }}</p>
         <p>Ходы: {{ moves }}</p>
@@ -35,10 +34,10 @@
         <button class="btn btn-danger mt-3" @click="testVictory">Проверить победу</button>
       </div>
 
-      <!-- Финальный экран -->
       <div v-if="gameEnded" class="end-message">
         <h3>Игра завершена!</h3>
         <p>{{ endMessage }}</p>
+        <p>Правильных элементов: {{ number_all_answers }} из {{ number_correct_answers }}</p>
         <p>Количество ходов: {{ moves }}</p>
         <p>Время прохождения: {{ time }}</p>
         <p>Точность: {{ accuracy }}%</p>
@@ -52,10 +51,11 @@
 <script>
 import Navbar from "../view/Navbar.vue";
 import { useAuthStore } from '../store/authStore';
+
 export default {
   components: { Navbar },
   setup() {
-    const authStore = useAuthStore(); // Используем хранилище
+    const authStore = useAuthStore();
     return { authStore };
   },
   data() {
@@ -63,26 +63,33 @@ export default {
       tiles: [],
       moves: 0,
       timeElapsed: 0,
+      time: "00:00:00", // Время в формате ЧЧ:ММ:СС
       accuracy: 100,
       timer: null,
       gameStarted: false,
       gameEnded: false,
       endMessage: '',
+      number_correct_answers: 15,
+      number_all_answers: 0,
+      startTime: null,
     };
   },
   computed: {
-    time() {
-      const minutes = Math.floor(this.timeElapsed / 60).toString().padStart(2, '0');
-      const seconds = (this.timeElapsed % 60).toString().padStart(2, '0');
-      return `${minutes}:${seconds}`;
-    },
-    motivationalMessage() {
-      if (this.moves <= 50) return 'Феноменальный результат! Вы прирождённый стратег!';
-      if (this.moves <= 150) return 'Отличная работа! Вы проявили аналитическое мышление.';
-      if (this.moves <= 300) return 'Хорошо! Немного практики, и результат улучшится.';
-      return 'Вы сделали это! Продолжайте тренироваться для улучшения навыков.';
-    },
+  motivationalMessage() {
+    if (this.accuracy >= 95) {
+      return 'Феноменальный результат! Вы прирождённый стратег!';
+    } else if (this.accuracy >= 85) {
+      return 'Отличная работа! Вы проявили аналитическое мышление.';
+    } else if (this.accuracy >= 70) {
+      return 'Хорошо! Немного практики, и результат улучшится.';
+    } else if (this.accuracy >= 50) {
+      return 'Попробуйте улучшить результат!';
+    } else {
+      return 'Продолжайте тренироваться для улучшения навыков.';
+    }
   },
+},
+
   methods: {
     startGame() {
       clearInterval(this.timer);
@@ -91,13 +98,24 @@ export default {
       this.tiles = this.initializeTiles();
       this.gameStarted = true;
       this.gameEnded = false;
+      this.number_all_answers = 0;
+      this.startTime = Date.now();
+      this.time = "00:00:00"; // Сброс времени
+
       this.timer = setInterval(() => {
         this.timeElapsed++;
+        this.updateTimeFormat();
       }, 1000);
+    },
+    updateTimeFormat() {
+      const hours = Math.floor(this.timeElapsed / 3600).toString().padStart(2, '0');
+      const minutes = Math.floor((this.timeElapsed % 3600) / 60).toString().padStart(2, '0');
+      const seconds = (this.timeElapsed % 60).toString().padStart(2, '0');
+      this.time = `${hours}:${minutes}:${seconds}`;
     },
     initializeTiles() {
       const tiles = [...Array(15).keys()].map(i => (i + 1).toString());
-      tiles.push(''); // Добавляем пустую клетку
+      tiles.push('');
       return this.shuffleTiles(tiles);
     },
     shuffleTiles(tiles) {
@@ -109,18 +127,17 @@ export default {
     },
     moveTile(index) {
       const emptyIndex = this.tiles.indexOf('');
-      const validMoves = [emptyIndex - 1, emptyIndex + 1, emptyIndex - 4, emptyIndex + 4]; // Соседние индексы
+      const validMoves = [emptyIndex - 1, emptyIndex + 1, emptyIndex - 4, emptyIndex + 4];
 
-      // Проверяем, что ход допустим
       if (validMoves.includes(index)) {
-        // Меняем местами пустую клетку и выбранную костяшку
         [this.tiles[emptyIndex], this.tiles[index]] = [this.tiles[index], this.tiles[emptyIndex]];
         this.moves++;
-        this.accuracy = this.calculateAccuracy(); // Обновляем точность
+        this.number_all_answers = this.calculateCorrectTiles();
+        this.accuracy = ((this.number_all_answers / this.number_correct_answers) * 100).toFixed(2);
       }
     },
     testVictory() {
-      const correctOrder = [...Array(15).keys()].map(i => (i + 1).toString()).concat(''); // Правильный порядок
+      const correctOrder = [...Array(15).keys()].map(i => (i + 1).toString()).concat('');
       if (this.tiles.join('') === correctOrder.join('')) {
         this.endGame('Поздравляем! Вы выиграли!');
       } else {
@@ -131,20 +148,15 @@ export default {
       clearInterval(this.timer);
       this.gameEnded = true;
       this.endMessage = message;
-      this.accuracy = this.calculateAccuracy(); // Рассчитываем точность при завершении игры
-      this.saveResults(); // Сохраняем результаты после завершения игры
+      this.number_all_answers = this.calculateCorrectTiles();
+      this.accuracy = ((this.number_all_answers / this.number_correct_answers) * 100).toFixed(2);
+      this.timeElapsed = Math.floor((Date.now() - this.startTime) / 1000);
+      this.updateTimeFormat();
+      this.saveResults();
     },
-    calculateAccuracy() {
-      const correctOrder = [...Array(15).keys()].map(i => (i + 1).toString()).concat(''); // Правильный порядок
-      let correctCount = 0;
-
-      for (let i = 0; i < this.tiles.length; i++) {
-        if (this.tiles[i] === correctOrder[i]) {
-          correctCount++;
-        }
-      }
-
-      return ((correctCount / 15) * 100).toFixed(2); // Рассчитываем точность как процент правильно расположенных костяшек
+    calculateCorrectTiles() {
+      const correctOrder = [...Array(15).keys()].map(i => (i + 1).toString()).concat('');
+      return this.tiles.filter((tile, i) => tile === correctOrder[i]).length;
     },
     async saveResults() {
       if (!this.authStore.user) {
@@ -152,36 +164,28 @@ export default {
         return;
       }
 
-      const testId = 10; // ID десятого теста
-      const scorePercentage = parseInt(this.accuracy); // Преобразуем точность в целое число
-
+      const testId = 10;
       try {
-        const response = await fetch("http://127.0.0.1:8000/api/result/", {
+        await fetch("http://127.0.0.1:8000/api/result/", {
           method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-            Authorization: `Bearer ${localStorage.getItem("token")}`,
-          },
+          headers: { "Content-Type": "application/json", Authorization: `Bearer ${localStorage.getItem("token")}` },
           body: JSON.stringify({
-            test: testId, // Используем ID теста
-            user: this.authStore.user.id, // ID пользователя
-            score_percentage: scorePercentage, // Отправляем целое число
+            test: testId, 
+            user: this.authStore.user.id, 
+            score_percentage: parseFloat(this.accuracy),
+            time_spent: this.time, // Время теперь отправляется в формате "00:00:00"
+            number_all_answers: this.number_all_answers, 
+            number_correct_answers: this.number_correct_answers
           }),
         });
-
-        if (response.ok) {
-          alert("Результаты успешно сохранены!");
-        } else {
-          const errorData = await response.json();
-          alert(errorData.error || "Ошибка при сохранении результатов");
-        }
+        alert("Результаты сохранены!");
       } catch (error) {
-        console.error("Ошибка при отправке результатов:", error);
+        console.error("Ошибка при отправке:", error);
       }
     },
   },
-  beforeDestroy() {
-    clearInterval(this.timer); // Очищаем таймер при уничтожении компонента
+  beforeUnmount() {
+    clearInterval(this.timer);
   },
 };
 </script>

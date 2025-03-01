@@ -5,12 +5,8 @@
     <div id="app">
       <div v-if="currentView === 'start'">
         <h1>Игра "Тест на память"</h1>
-        <p>
-          <strong>"Тест на память"</strong> — это игра на развитие внимания и концентрации.
-        </p>
-        <p>
-          <strong>Цель:</strong> Найдите все пары за 60 секунд.
-        </p>
+        <p><strong>"Тест на память"</strong> — это игра на развитие внимания и концентрации.</p>
+        <p><strong>Цель:</strong> Найдите все пары за 60 секунд.</p>
         <button class="btn btn-primary" @click="startGame">Начать игру</button>
       </div>
 
@@ -19,7 +15,7 @@
         <div class="cards-container d-flex flex-wrap justify-content-center">
           <div v-for="(card, index) in cards" :key="index" class="card"
                :class="{'flipped': card.flipped || card.matched, 'matched': card.matched}"
-               @click="flipCard(card, index)">
+               @click="flipCard(card)">
             <div class="card-inner">
               <div class="card-front"></div>
               <div class="card-back">
@@ -28,16 +24,14 @@
             </div>
           </div>
         </div>
-        <button class="btn btn-danger mt-3" @click="endGame">Завершить тест</button>
       </div>
 
       <div v-else-if="currentView === 'result'">
         <h3>Результаты</h3>
-        <p>Время выполнения: {{ elapsedTime }} секунд.</p>
+        <p>Время выполнения: {{ time }}</p>
+        <p>Правильные ответы: {{ number_all_answers }} / {{ number_correct_answers }}</p>
         <p>Точность: {{ accuracy }}%</p>
-        <div class="controls">
-          <button class="btn btn-success" @click="restartGame">Начать заново</button>
-        </div>
+        <button class="btn btn-success" @click="restartGame">Начать заново</button>
       </div>
       <router-link to="/tests" class="btn btn-secondary">Назад к тестам</router-link>
     </div>
@@ -47,10 +41,11 @@
 <script>
 import Navbar from "../view/Navbar.vue";
 import { useAuthStore } from '../store/authStore';
+
 export default {
   components: { Navbar },
   setup() {
-    const authStore = useAuthStore(); // Используем хранилище
+    const authStore = useAuthStore();
     return { authStore };
   },
   data() {
@@ -58,29 +53,35 @@ export default {
       currentView: 'start',
       cards: [],
       flippedCards: [],
-      matchedCards: [],
-      gameStarted: false,
-      remainingTime: 60,
+      matchedPairs: [],
+      number_all_answers: 0,  // Сколько отгадал (найденные пары)
+      number_correct_answers: 8,  // Всего пар в тесте
+      remainingTime: 60, // Таймер 60 секунд
+      timeElapsed: 0, // Время в секундах
+      time: "00:00:00", // Форматированное время
+      gameTimer: null,
       startTime: null,
-      elapsedTime: 0,
     };
   },
   computed: {
     formattedTime() {
       const minutes = Math.floor(this.remainingTime / 60).toString().padStart(2, "0");
       const seconds = (this.remainingTime % 60).toString().padStart(2, "0");
-      return `${minutes}:${seconds}`;
+      return `00:${minutes}:${seconds}`;
     },
     accuracy() {
-      const totalPairs = this.cards.length / 2;
-      const matchedPairs = this.matchedCards.length;
-      return totalPairs ? ((matchedPairs / totalPairs) * 100).toFixed(2) : 0;
+      return ((this.number_all_answers / this.number_correct_answers) * 100).toFixed(2);
     },
   },
   methods: {
     startGame() {
       this.currentView = 'test';
       this.cards = this.generateCards();
+      this.matchedPairs = [];
+      this.number_all_answers = 0;
+      this.remainingTime = 60;
+      this.timeElapsed = 0;
+      this.time = "00:00:00";
       this.startTime = Date.now();
       this.startTimer();
     },
@@ -93,14 +94,21 @@ export default {
       return array.sort(() => Math.random() - 0.5);
     },
     startTimer() {
-      const timer = setInterval(() => {
+      this.gameTimer = setInterval(() => {
         if (this.remainingTime > 0) {
           this.remainingTime--;
+          this.timeElapsed++;
+          this.time = this.formatTime(this.timeElapsed);
         } else {
-          clearInterval(timer);
           this.endGame();
         }
       }, 1000);
+    },
+    formatTime(seconds) {
+      const hours = Math.floor(seconds / 3600).toString().padStart(2, "0");
+      const minutes = Math.floor((seconds % 3600) / 60).toString().padStart(2, "0");
+      const sec = (seconds % 60).toString().padStart(2, "0");
+      return `${hours}:${minutes}:${sec}`;
     },
     flipCard(card) {
       if (card.flipped || card.matched || this.flippedCards.length === 2) return;
@@ -111,28 +119,35 @@ export default {
       }
     },
     checkForMatch() {
-      const [firstCard, secondCard] = this.flippedCards;
-      if (firstCard.value === secondCard.value) {
-        firstCard.matched = true;
-        secondCard.matched = true;
-        this.matchedCards.push(firstCard);
-      } else {
-        setTimeout(() => {
-          firstCard.flipped = false;
-          secondCard.flipped = false;
-        }, 1000);
-      }
-      this.flippedCards = [];
-    },
-    endGame() {
-      this.elapsedTime = ((Date.now() - this.startTime) / 1000).toFixed(2);
-      this.currentView = 'result';
-      this.saveResults(); // Сохраняем результаты после завершения теста
-    },
+  const [firstCard, secondCard] = this.flippedCards;
+  if (firstCard.value === secondCard.value) {
+    firstCard.matched = true;
+    secondCard.matched = true;
+    this.matchedPairs.push(firstCard);
+    this.number_all_answers++; // Увеличиваем счетчик найденных пар
+
+    // ✅ Если нашли все пары, завершаем игру
+    if (this.number_all_answers === this.number_correct_answers) {
+      this.endGame();
+    }
+  } else {
+    setTimeout(() => {
+      firstCard.flipped = false;
+      secondCard.flipped = false;
+    }, 1000);
+  }
+  this.flippedCards = [];
+},
+endGame() {
+  clearInterval(this.gameTimer); // ✅ Останавливаем таймер
+  this.time = this.formatTime(this.timeElapsed); // Фиксируем финальное время
+  this.currentView = 'result';
+  this.saveResults(); // Сохраняем результаты
+},
     restartGame() {
       this.currentView = 'start';
       this.remainingTime = 60;
-      this.matchedCards = [];
+      this.matchedPairs = [];
       this.flippedCards = [];
     },
     async saveResults() {
@@ -141,8 +156,8 @@ export default {
         return;
       }
 
-      const testId = 4; // ID четвертого теста
-      const scorePercentage = this.accuracy; // Точность в процентах
+      const testId = 4; // ID теста
+      const scorePercentage = parseFloat(this.accuracy);
 
       try {
         const response = await fetch("http://127.0.0.1:8000/api/result/", {
@@ -152,9 +167,12 @@ export default {
             Authorization: `Bearer ${localStorage.getItem("token")}`,
           },
           body: JSON.stringify({
-            test: testId, // Используем ID теста
-            user: this.authStore.user.id, // ID пользователя
-            score_percentage: parseFloat(scorePercentage), // Преобразуем в число
+            test: testId,
+            user: this.authStore.user.id,
+            score_percentage: scorePercentage,
+            time: this.time, // Время в формате "00:00:00"
+            number_all_answers: this.number_all_answers,
+            number_correct_answers: this.number_correct_answers,
           }),
         });
 
@@ -171,6 +189,7 @@ export default {
   },
 };
 </script>
+
 
 <style scoped>
 .container {

@@ -1,19 +1,16 @@
 <template>
-  <!-- Navbar вне контейнера, чтобы занимать всю ширину -->
   <Navbar />
   <div class="container mt-5 text-center">
     <div class="color-blindness-test">
       <h2>{{ $route.params.name }}</h2>
-      
-      <!-- Начальный экран -->
+
       <div v-if="!testStarted && !testCompleted">
         <p>Ваша задача: выбрать правильное число, которое вы видите на изображении.</p>
         <button class="start-button btn btn-primary" @click="startTest">Начать тест</button>
       </div>
-      
-      <!-- Экран прохождения теста -->
+
       <div v-else-if="testStarted && !testCompleted">
-        <p>Вопрос {{ currentQuestionIndex + 1 }} из {{ questions.length }}</p>
+        <p>Вопрос {{ currentQuestionIndex + 1 }} из {{ number_correct_answers }}</p>
         <img :src="currentQuestion.image" alt="Тест на цветовое зрение" />
         <div class="answers">
           <button
@@ -26,12 +23,11 @@
           </button>
         </div>
       </div>
-      
-      <!-- Финальный экран -->
+
       <div v-if="testCompleted">
-        <p>Ваш результат: {{ score }} из {{ questions.length }}</p>
+        <p>Ваш результат: {{ score }} из {{ number_correct_answers }}</p>
         <p>Точность: {{ accuracy }}%</p>
-        <p>Время выполнения: {{ time }} секунд</p>
+        <p>Время выполнения: {{ time }}</p>
         <button class="btn btn-secondary" @click="resetTest">Пройти заново</button>
       </div>
       <router-link to="/tests" class="btn btn-secondary">Назад к тестам</router-link>
@@ -62,18 +58,21 @@ import img92 from '../assets/test_res/9(2).png';
 export default {
   components: { Navbar },
   setup() {
-    const authStore = useAuthStore(); // Используем хранилище
-    return { authStore }; // Возвращаем authStore, чтобы он был доступен в компоненте
+    const authStore = useAuthStore();
+    return { authStore };
   },
   data() {
     return {
       testStarted: false,
       testCompleted: false,
       score: 0,
+      number_all_answers: 0,
+      number_correct_answers: 0,
       currentQuestionIndex: 0,
       startTime: null,
-      time: 0,
-      accuracy: 0,
+      timeElapsed: 0,
+      time: "00:00:00", // Время в нужном формате
+      timer: null,
       questions: [
         {
           image: triangleCircle,
@@ -167,43 +166,62 @@ export default {
     currentQuestion() {
       return this.questions[this.currentQuestionIndex];
     },
+    accuracy() {
+      return ((this.score / this.number_correct_answers) * 100).toFixed(2);
+    },
   },
   methods: {
+    formatTime(seconds) {
+      const hours = Math.floor(seconds / 3600).toString().padStart(2, "0");
+      const minutes = Math.floor((seconds % 3600) / 60).toString().padStart(2, "0");
+      const sec = (seconds % 60).toString().padStart(2, "0");
+      return `${hours}:${minutes}:${sec}`;
+    },
     startTest() {
       this.testStarted = true;
       this.testCompleted = false;
       this.score = 0;
+      this.number_all_answers = 0;
+      this.number_correct_answers = this.questions.length;
       this.currentQuestionIndex = 0;
+      this.timeElapsed = 0;
       this.startTime = Date.now();
-      this.accuracy = 0;
+      this.startTimer();
+    },
+    startTimer() {
+      this.timer = setInterval(() => {
+        this.timeElapsed = Math.floor((Date.now() - this.startTime) / 1000);
+      }, 1000);
     },
     checkAnswer(option) {
+      this.number_all_answers++;
       if (option === this.currentQuestion.correctAnswer) {
         this.score++;
       }
-      if (this.currentQuestionIndex < this.questions.length - 1) {
+      if (this.currentQuestionIndex < this.number_correct_answers - 1) {
         this.currentQuestionIndex++;
       } else {
-        this.testCompleted = true;
-        this.time = ((Date.now() - this.startTime) / 1000).toFixed(2);
-        this.accuracy = ((this.score / this.questions.length) * 100).toFixed(2);
-        this.saveResults(); // Сохраняем результаты
+        this.endTest();
       }
+    },
+    endTest() {
+      clearInterval(this.timer);
+      this.testCompleted = true;
+      this.time = this.formatTime(this.timeElapsed); // Форматируем итоговое время
+      this.saveResults();
     },
     resetTest() {
       this.testStarted = false;
       this.testCompleted = false;
-      this.time = 0;
-      this.accuracy = 0;
+      this.timeElapsed = 0;
+      this.time = "00:00:00";
+      clearInterval(this.timer);
     },
     async saveResults() {
       if (!this.authStore.user) {
-        alert("Пользователь не авторизован. Пожалуйста, войдите в систему.");
+        alert("Пользователь не авторизован. Войдите в систему.");
         return;
       }
-
-      const testId = 16; // ID шестнадцатого теста
-      const scorePercentage = parseFloat(this.accuracy); // Точность в процентах
 
       try {
         const response = await fetch("http://127.0.0.1:8000/api/result/", {
@@ -213,9 +231,12 @@ export default {
             Authorization: `Bearer ${localStorage.getItem("token")}`,
           },
           body: JSON.stringify({
-            test: testId, // Используем ID теста
-            user: this.authStore.user.id, // ID пользователя
-            score_percentage: scorePercentage, // Точность в процентах
+            test: 16, // ID теста
+            user: this.authStore.user.id,
+            score_percentage: parseFloat(this.accuracy),
+            time: this.time, // Сохраняем итоговое время
+            number_all_answers: this.number_all_answers,
+            number_correct_answers: this.number_correct_answers,
           }),
         });
 
@@ -230,6 +251,10 @@ export default {
       }
     },
   },
+  beforeUnmount() {
+    clearInterval(this.timer);
+  },
 };
 </script>
+
 <style src="../assets/style.css"></style>

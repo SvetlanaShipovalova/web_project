@@ -17,8 +17,9 @@
 
       <!-- Игровой экран -->
       <div v-else-if="gameStarted">
-        <p>Время: {{ formattedTime }}</p>
-        <p>Очки: {{ score }}</p>
+        <p>Оставшееся время: {{ formattedTime }}</p>
+        <p>Раунд: {{ currentRound }} / {{ number_correct_answers }}</p>
+        <p>Правильные ответы: {{ number_all_answers }} / {{ number_correct_answers }}</p>
         <div class="game-area d-flex flex-wrap justify-content-center">
           <div v-for="i in 30" :key="i" class="square"
                :class="{ active: i === activeSquare }" @click="handleClick(i)">
@@ -29,7 +30,8 @@
       <!-- Финальный экран -->
       <div v-if="gameEnded" class="end-message">
         <h3>Игра завершена!</h3>
-        <p>Среднее время реакции: {{ time.toFixed(2) }} сек</p>
+        <p>Общее время: {{ time }}</p>
+        <p>Правильные ответы: {{ number_all_answers }} / {{ number_correct_answers }}</p>
         <p>Точность: {{ accuracy }}%</p>
         <button class="btn btn-success" @click="restartGame">Пройти снова</button>
       </div>
@@ -41,55 +43,77 @@
 <script>
 import Navbar from "../view/Navbar.vue";
 import { useAuthStore } from '../store/authStore';
+
 export default {
   components: { Navbar },
   setup() {
-    const authStore = useAuthStore(); // Используем хранилище
+    const authStore = useAuthStore();
     return { authStore };
   },
   data() {
     return {
       gameStarted: false,
       gameEnded: false,
-      score: 0,
-      time: 0,
+      timeLeft: 50, // 50 секунд на 50 раундов
+      timeElapsed: 0, // Общее время в секундах
+      time: "00:00:00", // Время в формате ЧЧ:ММ:СС
       activeSquare: null,
-      reactionTimes: [],
+      number_all_answers: 0, // Количество правильных ответов
+      number_correct_answers: 50, // Всего 50 раундов
+      currentRound: 0,
       startTime: null,
       gameInterval: null,
     };
   },
   computed: {
     formattedTime() {
-      return `${Math.floor(this.time / 60).toString().padStart(2, "0")}:${(this.time % 60).toString().padStart(2, "0")}`;
+      const minutes = Math.floor(this.timeLeft / 60).toString().padStart(2, "0");
+      const seconds = (this.timeLeft % 60).toString().padStart(2, "0");
+      return `00:${minutes}:${seconds}`;
     },
     accuracy() {
-      return this.reactionTimes.length > 0 ? ((this.score / this.reactionTimes.length) * 100).toFixed(2) : 0;
+      return this.number_correct_answers > 0
+        ? ((this.number_all_answers / this.number_correct_answers) * 100).toFixed(2)
+        : 0;
     },
   },
   methods: {
     startGame() {
       this.gameStarted = true;
       this.gameEnded = false;
-      this.score = 0;
-      this.reactionTimes = [];
-      this.startTime = performance.now();
+      this.number_all_answers = 0;
+      this.currentRound = 0;
+      this.timeElapsed = 0;
+      this.timeLeft = 50;
+      this.time = "00:00:00";
+      this.startTime = Date.now();
+
       this.generateRandomSquare();
+
       this.gameInterval = setInterval(() => {
-        this.time++;
-        if (this.time >= 30) {
+        if (this.currentRound < this.number_correct_answers) {
+          this.currentRound++;
+          this.timeLeft--;
+          this.timeElapsed++;
+          this.time = this.formatTime(this.timeElapsed); // Обновляем формат времени
+          this.generateRandomSquare();
+        } else {
           this.endGame();
         }
       }, 1000);
+    },
+    formatTime(seconds) {
+      const hours = Math.floor(seconds / 3600).toString().padStart(2, "0");
+      const minutes = Math.floor((seconds % 3600) / 60).toString().padStart(2, "0");
+      const sec = (seconds % 60).toString().padStart(2, "0");
+      return `${hours}:${minutes}:${sec}`;
     },
     generateRandomSquare() {
       this.activeSquare = Math.floor(Math.random() * 30) + 1;
     },
     handleClick(index) {
       if (index === this.activeSquare) {
-        const reactionTime = (performance.now() - this.startTime) / 1000;
-        this.reactionTimes.push(reactionTime);
-        this.score++;
+        this.number_all_answers++; // Увеличиваем количество правильных ответов
         this.generateRandomSquare();
       }
     },
@@ -97,8 +121,8 @@ export default {
       clearInterval(this.gameInterval);
       this.gameStarted = false;
       this.gameEnded = true;
-      this.time = this.reactionTimes.length > 0 ? this.reactionTimes.reduce((a, b) => a + b, 0) / this.reactionTimes.length : 0;
-      this.saveResults(); // Сохраняем результаты после завершения теста
+      this.time = this.formatTime(this.timeElapsed);
+      this.saveResults();
     },
     restartGame() {
       this.startGame();
@@ -109,8 +133,8 @@ export default {
         return;
       }
 
-      const testId = 5; // ID пятого теста
-      const scorePercentage = this.accuracy; // Точность в процентах
+      const testId = 5; // ID теста
+      const scorePercentage = parseFloat(this.accuracy); // Точность в процентах
 
       try {
         const response = await fetch("http://127.0.0.1:8000/api/result/", {
@@ -120,9 +144,12 @@ export default {
             Authorization: `Bearer ${localStorage.getItem("token")}`,
           },
           body: JSON.stringify({
-            test: testId, // Используем ID теста
-            user: this.authStore.user.id, // ID пользователя
-            score_percentage: parseFloat(scorePercentage), // Преобразуем в число
+            test: testId,
+            user: this.authStore.user.id,
+            score_percentage: scorePercentage,
+            time: this.time, // Время в формате "00:00:00"
+            number_all_answers: this.number_all_answers,
+            number_correct_answers: this.number_correct_answers,
           }),
         });
 
@@ -140,33 +167,26 @@ export default {
 };
 </script>
 
-<style scoped>
-.container {
-  text-align: center;
-}
+<style>
 .game-area {
   display: grid;
-  grid-template-columns: repeat(6, 1fr);
+  grid-template-columns: repeat(6, 60px);
   gap: 10px;
   margin-top: 20px;
 }
+
 .square {
-  width: 50px;
-  height: 50px;
-  background-color: #f0f0f0;
-  border-radius: 5px;
-  cursor: pointer;
+  width: 60px;
+  height: 60px;
+  background-color: lightgray;
+  border: 1px solid #333;
   display: flex;
-  justify-content: center;
   align-items: center;
-}
-.square.active {
-  background-color: #007bff;
-}
-button {
-  font-size: 18px;
-  padding: 10px;
+  justify-content: center;
   cursor: pointer;
-  margin: 10px;
+}
+
+.square.active {
+  background-color: red;
 }
 </style>
