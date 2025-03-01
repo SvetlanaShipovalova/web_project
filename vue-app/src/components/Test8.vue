@@ -2,11 +2,10 @@
     <!-- Navbar вне контейнера, чтобы занимать всю ширину экрана -->
     <Navbar />
     <div class="container mt-5 text-center">
-    <h2>{{ $route.params.name }}</h2>
       <div class="game-container sequence-test-container">
         <!-- Начальный экран -->
         <div v-if="!gameStarted && !gameEnded">
-          <h1>Тест Числовых Последовательностей</h1>
+          <h2>{{ $route.params.name }}</h2>
           <p>
             <strong>"Тест Числовых Последовательностей"</strong> — это тест для развития логического мышления и аналитических способностей.
           </p>
@@ -56,13 +55,18 @@
       </div>
     </div>
   </template>
-  
-  <script setup>
-  import Navbar from "../view/Navbar.vue";
-  </script>
-  
+
   <script>
+  import Navbar from "../view/Navbar.vue";
+  import { useAuthStore } from '../store/authStore';
   export default {
+    components: {
+      Navbar,
+    },
+    setup() {
+      const authStore = useAuthStore(); // Используем хранилище
+      return { authStore };
+    },
     data() {
       return {
         gameStarted: false,
@@ -136,6 +140,40 @@
         this.gameEnded = true;
         this.accuracy = Math.round((this.correctAnswers / this.questions.length) * 100);
         this.time = ((new Date() - this.startTime) / 1000).toFixed(2);
+        this.saveResults(); // Сохраняем результаты после завершения теста
+      },
+      async saveResults() {
+        if (!this.authStore.user) {
+          alert("Пользователь не авторизован. Пожалуйста, войдите в систему.");
+          return;
+        }
+
+        const testId = 8; // ID теста "Тест Числовых Последовательностей"
+        const scorePercentage = this.accuracy; // Точность в процентах
+
+        try {
+          const response = await fetch("http://127.0.0.1:8000/api/result/", {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+              Authorization: `Bearer ${localStorage.getItem("token")}`,
+            },
+            body: JSON.stringify({
+              test: testId, // Используем ID теста
+              user: this.authStore.user.id, // ID пользователя
+              score_percentage: parseFloat(scorePercentage), // Преобразуем в число
+            }),
+          });
+
+          if (response.ok) {
+            alert("Результаты успешно сохранены!");
+          } else {
+            const errorData = await response.json();
+            alert(errorData.error || "Ошибка при сохранении результатов");
+          }
+        } catch (error) {
+          console.error("Ошибка при отправке результатов:", error);
+        }
       },
     },
   };

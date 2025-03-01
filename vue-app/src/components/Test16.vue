@@ -1,9 +1,9 @@
 <template>
+  <!-- Navbar вне контейнера, чтобы занимать всю ширину -->
   <Navbar />
   <div class="container mt-5 text-center">
-  <h2>{{ $route.params.name }}</h2>
     <div class="color-blindness-test">
-      <h1>Тест на цветовое зрение</h1>
+      <h2>{{ $route.params.name }}</h2>
       
       <!-- Начальный экран -->
       <div v-if="!testStarted && !testCompleted">
@@ -39,8 +39,9 @@
   </div>
 </template>
 
-<script setup>
+<script>
 import Navbar from "../view/Navbar.vue";
+import { useAuthStore } from '../store/authStore'; // Импортируем authStore
 import triangleCircle from '../assets/test_res/triangleCircle.png';
 import img96 from '../assets/test_res/96.png';
 import img13 from '../assets/test_res/13.png';
@@ -57,10 +58,13 @@ import img136 from '../assets/test_res/136.png';
 import triangleCircle4 from '../assets/test_res/triangleCircle(4).png';
 import img30 from '../assets/test_res/30.png';
 import img92 from '../assets/test_res/9(2).png';
-</script>
 
-<script>
 export default {
+  components: { Navbar },
+  setup() {
+    const authStore = useAuthStore(); // Используем хранилище
+    return { authStore }; // Возвращаем authStore, чтобы он был доступен в компоненте
+  },
   data() {
     return {
       testStarted: false,
@@ -183,6 +187,7 @@ export default {
         this.testCompleted = true;
         this.time = ((Date.now() - this.startTime) / 1000).toFixed(2);
         this.accuracy = ((this.score / this.questions.length) * 100).toFixed(2);
+        this.saveResults(); // Сохраняем результаты
       }
     },
     resetTest() {
@@ -190,6 +195,39 @@ export default {
       this.testCompleted = false;
       this.time = 0;
       this.accuracy = 0;
+    },
+    async saveResults() {
+      if (!this.authStore.user) {
+        alert("Пользователь не авторизован. Пожалуйста, войдите в систему.");
+        return;
+      }
+
+      const testId = 16; // ID шестнадцатого теста
+      const scorePercentage = parseFloat(this.accuracy); // Точность в процентах
+
+      try {
+        const response = await fetch("http://127.0.0.1:8000/api/result/", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${localStorage.getItem("token")}`,
+          },
+          body: JSON.stringify({
+            test: testId, // Используем ID теста
+            user: this.authStore.user.id, // ID пользователя
+            score_percentage: scorePercentage, // Точность в процентах
+          }),
+        });
+
+        if (response.ok) {
+          alert("Результаты успешно сохранены!");
+        } else {
+          const errorData = await response.json();
+          alert(errorData.error || "Ошибка при сохранении результатов");
+        }
+      } catch (error) {
+        console.error("Ошибка при отправке результатов:", error);
+      }
     },
   },
 };

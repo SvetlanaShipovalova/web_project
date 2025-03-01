@@ -15,11 +15,11 @@
         <p>Количество ошибок: {{ missClicks }}</p>
         <div class="grid">
           <button
-              v-for="number in shuffledNumbers"
-              :key="number"
-              :disabled="clickedNumbers.includes(number)"
-              @click="checkNumber(number)"
-              class="grid-button"
+            v-for="number in shuffledNumbers"
+            :key="number"
+            :disabled="clickedNumbers.includes(number)"
+            @click="checkNumber(number)"
+            class="grid-button"
           >
             {{ number }}
           </button>
@@ -46,19 +46,23 @@
   </div>
 </template>
 
-
-<script setup>
-import Navbar from "../view/Navbar.vue";
-</script>
-
 <script>
+import Navbar from "../view/Navbar.vue";
+import { useAuthStore } from "../store/authStore";
+
 export default {
+  components: {
+    Navbar,
+  },
+  setup() {
+    const authStore = useAuthStore();
+    return { authStore };
+  },
   data() {
     return {
-      currentView: 'start',
+      currentView: "start",
       round: 1,
       timer: null,
-      timeTaken: 0,
       remainingTime: 60,
       maxNumber: 12,
       numbers: [],
@@ -67,19 +71,21 @@ export default {
       results: [],
       missClicks: 0,
       totalMissClicks: 0,
-      gridDimensions: { rows: 4, cols: 3 }
+      gridDimensions: { rows: 4, cols: 3 },
     };
   },
   computed: {
     accuracy() {
       const totalClicks = this.round * this.maxNumber;
-      return totalClicks > 0 ? ((totalClicks - this.totalMissClicks) / totalClicks * 100).toFixed(2) : 0;
-    }
+      return totalClicks > 0
+        ? (((totalClicks - this.totalMissClicks) / totalClicks) * 100).toFixed(2)
+        : 0;
+    },
   },
   methods: {
     startTest() {
       this.resetRound();
-      this.currentView = 'test';
+      this.currentView = "test";
       this.startTimer();
     },
     startTimer() {
@@ -129,7 +135,8 @@ export default {
         this.resetRound();
         this.startTimer();
       } else {
-        this.currentView = 'result';
+        this.currentView = "result";
+        this.saveResults();
       }
     },
     restartRound() {
@@ -146,7 +153,7 @@ export default {
         this.gridDimensions = { rows: 4, cols: 3 };
       } else if (this.round === 2) {
         this.maxNumber = 16;
-this.gridDimensions = { rows: 4, cols: 4 };
+        this.gridDimensions = { rows: 4, cols: 4 };
       } else {
         this.maxNumber = 20;
         this.gridDimensions = { rows: 5, cols: 4 };
@@ -161,15 +168,82 @@ this.gridDimensions = { rows: 4, cols: 4 };
       this.startTest();
     },
     goBack() {
-      this.currentView = 'start';
+      this.currentView = "start";
       this.round = 1;
       this.results = [];
       this.totalMissClicks = 0;
     },
     endTest() {
       this.stopTimer();
-      this.currentView = 'result';
-    }
-  }
+      this.currentView = "result";
+    },
+    async saveResults() {
+      if (!this.authStore.user) {
+        alert("Пользователь не авторизован. Пожалуйста, войдите в систему.");
+        return;
+      }
+
+      const testId = 1; // ID теста, с которым связаны результаты
+      const scorePercentage = this.accuracy; // Процент правильных ответов
+
+      try {
+        const response = await fetch("http://127.0.0.1:8000/api/result/", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${localStorage.getItem("token")}`,
+          },
+          body: JSON.stringify({
+            test: testId, // Используем ID теста
+            user: this.authStore.user.id, // ID пользователя
+            score_percentage: parseFloat(scorePercentage), // Преобразуем в число
+          }),
+        });
+
+        if (response.ok) {
+          alert("Результаты успешно сохранены!");
+        } else {
+          const errorData = await response.json();
+          alert(errorData.error || "Ошибка при сохранении результатов");
+        }
+      } catch (error) {
+        console.error("Ошибка при отправке результатов:", error);
+      }
+    },
+  },
 };
 </script>
+
+<style scoped>
+#app {
+  font-family: Avenir, Helvetica, Arial, sans-serif;
+  text-align: center;
+  color: #2c3e50;
+  margin-top: 60px;
+}
+
+.grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(60px, 1fr));
+  gap: 10px;
+  margin: 20px auto;
+  max-width: 300px;
+}
+
+.grid-button {
+  padding: 20px;
+  font-size: 18px;
+  cursor: pointer;
+}
+
+.controls {
+  margin-top: 20px;
+}
+
+button {
+  margin: 5px;
+  padding: 10px 20px;
+  font-size: 16px;
+  cursor: pointer;
+}
+</style>

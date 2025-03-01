@@ -71,7 +71,7 @@ const register = async () => {
    };
 
 
-   console.log("Отправляемые данные:", data);  // Логирование данных
+   console.log("Отправляемые данные:", data);
 
 
    const response = await fetch("http://127.0.0.1:8000/api/register/", {

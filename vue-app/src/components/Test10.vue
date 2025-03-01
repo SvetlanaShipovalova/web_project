@@ -49,12 +49,15 @@
   </div>
 </template>
 
-<script setup>
-import Navbar from "../view/Navbar.vue";
-</script>
-
 <script>
+import Navbar from "../view/Navbar.vue";
+import { useAuthStore } from '../store/authStore';
 export default {
+  components: { Navbar },
+  setup() {
+    const authStore = useAuthStore(); // Используем хранилище
+    return { authStore };
+  },
   data() {
     return {
       tiles: [],
@@ -85,49 +88,100 @@ export default {
       clearInterval(this.timer);
       this.timeElapsed = 0;
       this.moves = 0;
-      this.accuracy = 100;
+      this.tiles = this.initializeTiles();
       this.gameStarted = true;
       this.gameEnded = false;
-      this.initializeTiles();
       this.timer = setInterval(() => {
         this.timeElapsed++;
       }, 1000);
     },
     initializeTiles() {
-      this.tiles = [...Array(15).keys()].map(i => (i + 1).toString()).concat('');
-      this.shuffleTiles();
+      const tiles = [...Array(15).keys()].map(i => (i + 1).toString());
+      tiles.push(''); // Добавляем пустую клетку
+      return this.shuffleTiles(tiles);
     },
-    shuffleTiles() {
-      for (let i = this.tiles.length - 1; i > 0; i--) {
+    shuffleTiles(tiles) {
+      for (let i = tiles.length - 1; i > 0; i--) {
         const j = Math.floor(Math.random() * (i + 1));
-        [this.tiles[i], this.tiles[j]] = [this.tiles[j], this.tiles[i]];
+        [tiles[i], tiles[j]] = [tiles[j], tiles[i]];
       }
-    },
-    isSolved() {
-      return this.tiles.join('') === '123456789101112131415';
+      return tiles;
     },
     moveTile(index) {
-      if (!this.gameStarted || this.gameEnded) return;
       const emptyIndex = this.tiles.indexOf('');
-      const validMoves = [emptyIndex - 1, emptyIndex + 1, emptyIndex - 4, emptyIndex + 4];
+      const validMoves = [emptyIndex - 1, emptyIndex + 1, emptyIndex - 4, emptyIndex + 4]; // Соседние индексы
+
+      // Проверяем, что ход допустим
       if (validMoves.includes(index)) {
+        // Меняем местами пустую клетку и выбранную костяшку
         [this.tiles[emptyIndex], this.tiles[index]] = [this.tiles[index], this.tiles[emptyIndex]];
         this.moves++;
-        if (this.isSolved()) this.endGame(true);
+        this.accuracy = this.calculateAccuracy(); // Обновляем точность
       }
     },
-    endGame(success) {
+    testVictory() {
+      const correctOrder = [...Array(15).keys()].map(i => (i + 1).toString()).concat(''); // Правильный порядок
+      if (this.tiles.join('') === correctOrder.join('')) {
+        this.endGame('Поздравляем! Вы выиграли!');
+      } else {
+        this.endGame('Игра еще не окончена. Продолжайте!');
+      }
+    },
+    endGame(message) {
       clearInterval(this.timer);
       this.gameEnded = true;
-      this.endMessage = success ? 'Поздравляем! Вы успешно собрали головоломку!' : 'Игра завершена.';
+      this.endMessage = message;
+      this.accuracy = this.calculateAccuracy(); // Рассчитываем точность при завершении игры
+      this.saveResults(); // Сохраняем результаты после завершения игры
     },
-    testVictory() {
-      this.tiles = ["1", "2", "3", "4", "5", "6", "7", "8", "9", "10", "11", "12", "13", "14", "15", ""];
-      this.moves = 233;
-      this.timeElapsed = 600;
-      this.accuracy = 85;
-      this.endGame(true);
+    calculateAccuracy() {
+      const correctOrder = [...Array(15).keys()].map(i => (i + 1).toString()).concat(''); // Правильный порядок
+      let correctCount = 0;
+
+      for (let i = 0; i < this.tiles.length; i++) {
+        if (this.tiles[i] === correctOrder[i]) {
+          correctCount++;
+        }
+      }
+
+      return ((correctCount / 15) * 100).toFixed(2); // Рассчитываем точность как процент правильно расположенных костяшек
     },
+    async saveResults() {
+      if (!this.authStore.user) {
+        alert("Пользователь не авторизован. Пожалуйста, войдите в систему.");
+        return;
+      }
+
+      const testId = 10; // ID десятого теста
+      const scorePercentage = parseInt(this.accuracy); // Преобразуем точность в целое число
+
+      try {
+        const response = await fetch("http://127.0.0.1:8000/api/result/", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${localStorage.getItem("token")}`,
+          },
+          body: JSON.stringify({
+            test: testId, // Используем ID теста
+            user: this.authStore.user.id, // ID пользователя
+            score_percentage: scorePercentage, // Отправляем целое число
+          }),
+        });
+
+        if (response.ok) {
+          alert("Результаты успешно сохранены!");
+        } else {
+          const errorData = await response.json();
+          alert(errorData.error || "Ошибка при сохранении результатов");
+        }
+      } catch (error) {
+        console.error("Ошибка при отправке результатов:", error);
+      }
+    },
+  },
+  beforeDestroy() {
+    clearInterval(this.timer); // Очищаем таймер при уничтожении компонента
   },
 };
 </script>

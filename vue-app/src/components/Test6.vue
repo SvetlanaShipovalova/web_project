@@ -54,12 +54,17 @@
     </div>
 </template>
 
-<script setup>
-import Navbar from "../view/Navbar.vue";
-</script>
-
 <script>
+import Navbar from "../view/Navbar.vue";
+import { useAuthStore } from '../store/authStore';
 export default {
+    components: {
+      Navbar,
+    },
+    setup() {
+        const authStore = useAuthStore(); // Используем хранилище
+        return { authStore };
+    },
     data() {
         return {
             gameStarted: false,
@@ -163,27 +168,61 @@ export default {
             }
         },
         calculateAccuracy() {
-    if (this.mistakes === 0) {
-        this.accuracy = 100;
-    } else if (this.mistakes === 1) {
-        this.accuracy = Math.max(0, (100 - 30 + this.correctAnswers));
-    } else if (this.mistakes === 2) {
-        this.accuracy = Math.max(0, (100 - 30 - 30 + this.correctAnswers));
-    } else if (this.mistakes >= 3) {
-        this.accuracy = Math.max(0, (100 - 30 - 30 - 10 + this.correctAnswers));
-    }
+            if (this.mistakes === 0) {
+                this.accuracy = 100;
+            } else if (this.mistakes === 1) {
+                this.accuracy = Math.max(0, (100 - 30 + this.correctAnswers));
+            } else if (this.mistakes === 2) {
+                this.accuracy = Math.max(0, (100 - 30 - 30 + this.correctAnswers));
+            } else if (this.mistakes >= 3) {
+                this.accuracy = Math.max(0, (100 - 30 - 30 - 10 + this.correctAnswers));
+            }
 
-    if (this.mistakes > 0) {
-        this.accuracy = parseFloat(this.accuracy.toFixed(2)); 
-    } else {
-        this.accuracy = parseFloat(this.accuracy.toFixed(2)); 
-    }
-},
+            if (this.mistakes > 0) {
+                this.accuracy = parseFloat(this.accuracy.toFixed(2));
+            } else {
+                this.accuracy = parseFloat(this.accuracy.toFixed(2));
+            }
+        },
         endGame() {
             this.gameStarted = false;
             this.gameEnded = true;
             const endTime = new Date();
             this.elapsedTime = ((endTime - this.startTime) / 1000).toFixed(2);
+            this.saveResults(); // Сохраняем результаты после завершения игры
+        },
+        async saveResults() {
+            if (!this.authStore.user) {
+                alert("Пользователь не авторизован. Пожалуйста, войдите в систему.");
+                return;
+            }
+
+            const testId = 6; // ID шестого теста
+            const scorePercentage = this.accuracy; // Точность в процентах
+
+            try {
+                const response = await fetch("http://127.0.0.1:8000/api/result/", {
+                    method: "POST",
+                    headers: {
+                        "Content-Type": "application/json",
+                        Authorization: `Bearer ${localStorage.getItem("token")}`,
+                    },
+                    body: JSON.stringify({
+                        test: testId, // Используем ID теста
+                        user: this.authStore.user.id, // ID пользователя
+                        score_percentage: parseFloat(scorePercentage), // Преобразуем в число
+                    }),
+                });
+
+                if (response.ok) {
+                    alert("Результаты успешно сохранены!");
+                } else {
+                    const errorData = await response.json();
+                    alert(errorData.error || "Ошибка при сохранении результатов");
+                }
+            } catch (error) {
+                console.error("Ошибка при отправке результатов:", error);
+            }
         },
     },
 };

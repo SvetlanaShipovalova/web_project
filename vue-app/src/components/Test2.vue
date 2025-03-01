@@ -1,7 +1,7 @@
 <template>
   <Navbar />
   <div class="container mt-5 text-center">
-    <h2>Тест №{{ $route.params.name }}</h2>
+    <h2>{{ $route.params.name }}</h2>
     <div id="app">
       <div v-if="currentView === 'start'">
         <h1>Тест числового охвата</h1>
@@ -35,13 +35,17 @@
   </div>
 </template>
 
-
-<script setup>
-import Navbar from "../view/Navbar.vue";
-</script>
-
 <script>
+import Navbar from "../view/Navbar.vue";
+import { useAuthStore } from '../store/authStore';
 export default {
+  components: {
+    Navbar,
+  },
+  setup() {
+    const authStore = useAuthStore(); // Используем хранилище
+    return { authStore };
+  },
   data() {
     return {
       currentView: 'start',
@@ -106,6 +110,7 @@ export default {
         this.startRound();
       } else {
         this.currentView = 'result';
+        this.saveResults(); // Сохраняем результаты после завершения теста
       }
     },
     restartTest() {
@@ -117,7 +122,73 @@ export default {
     },
     goBack() {
       this.currentView = 'start';
-    }
+    },
+    async saveResults() {
+      if (!this.authStore.user) {
+        alert("Пользователь не авторизован. Пожалуйста, войдите в систему.");
+        return;
+      }
+
+      const testId = 2; // ID второго теста
+      const scorePercentage = this.calculateAverageAccuracy(); // Средняя точность
+
+      try {
+        const response = await fetch("http://127.0.0.1:8000/api/result/", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${localStorage.getItem("token")}`,
+          },
+          body: JSON.stringify({
+            test: testId, // Используем ID теста
+            user: this.authStore.user.id, // ID пользователя
+            score_percentage: parseFloat(scorePercentage), // Преобразуем в число
+          }),
+        });
+
+        if (response.ok) {
+          alert("Результаты успешно сохранены!");
+        } else {
+          const errorData = await response.json();
+          alert(errorData.error || "Ошибка при сохранении результатов");
+        }
+      } catch (error) {
+        console.error("Ошибка при отправке результатов:", error);
+      }
+    },
+    calculateAverageAccuracy() {
+      if (this.results.length === 0) return 0;
+      const sum = this.results.reduce((acc, curr) => acc + curr, 0);
+      return (sum / this.results.length).toFixed(2);
+    },
   }
 };
 </script>
+
+<style scoped>
+#app {
+  font-family: Avenir, Helvetica, Arial, sans-serif;
+  text-align: center;
+  color: #2c3e50;
+  margin-top: 60px;
+}
+
+.digit-to-remember {
+  font-size: 3rem;
+  margin: 20px 0;
+}
+
+.buttons {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 10px;
+  max-width: 300px;
+  margin: 0 auto;
+}
+
+button {
+  padding: 20px;
+  font-size: 1.5rem;
+  cursor: pointer;
+}
+</style>

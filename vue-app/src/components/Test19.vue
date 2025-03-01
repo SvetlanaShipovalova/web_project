@@ -29,13 +29,16 @@
       </div>
     </div>
   </template>
-  
-  <script setup>
-  import Navbar from "../view/Navbar.vue";
-  </script>
-  
-  <script>
+
+<script>
+import Navbar from "../view/Navbar.vue";
+import { useAuthStore } from '../store/authStore'; // Импортируем authStore
   export default {
+    components: { Navbar },
+    setup() {
+      const authStore = useAuthStore(); // Используем хранилище
+      return { authStore };
+    },
     data() {
       return {
         leftNumber: 0,
@@ -83,6 +86,7 @@
         this.testFinished = true;
         this.elapsedTime = this.startTime - this.remainingTime;
         this.accuracy = this.totalQuestions > 0 ? (this.correctAnswers / this.totalQuestions) * 100 : 0;
+        this.saveResults(); // Сохраняем результаты
       },
       resetTest() {
         this.testFinished = false;
@@ -94,13 +98,60 @@
         this.startTimer();
         this.generateNumbers();
       },
+      async saveResults() {
+        if (!this.authStore.user) {
+          alert("Пользователь не авторизован. Пожалуйста, войдите в систему.");
+          return;
+        }
+
+        const testId = 19; // ID девятнадцатого теста
+        const scorePercentage = parseFloat(this.accuracy); // Точность в процентах
+
+        // Проверка данных
+        if (isNaN(scorePercentage)) {
+          alert("Ошибка: некорректное значение точности.");
+          return;
+        }
+
+        // Логирование данных
+        console.log("Отправляемые данные:", {
+          test: testId,
+          user: this.authStore.user.id,
+          score_percentage: scorePercentage,
+        });
+
+        try {
+          const response = await fetch("http://127.0.0.1:8000/api/result/", {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+              Authorization: `Bearer ${localStorage.getItem("token")}`,
+            },
+            body: JSON.stringify({
+              test: testId, // Используем ID теста
+              user: this.authStore.user.id, // ID пользователя
+              score_percentage: scorePercentage, // Точность в процентах
+            }),
+          });
+
+          if (response.ok) {
+            alert("Результаты успешно сохранены!");
+          } else {
+            const errorData = await response.json();
+            console.error("Ошибка сервера:", errorData);
+            alert(errorData.error || "Ошибка при сохранении результатов");
+          }
+        } catch (error) {
+          console.error("Ошибка при отправке результатов:", error);
+        }
+      },
     },
     mounted() {
       this.generateNumbers();
       this.startTimer();
     },
   };
-  </script>
+</script>
   
   <style scoped>
   .container {

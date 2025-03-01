@@ -53,11 +53,16 @@
       </div>
     </div>
   </template>
-  
+
   <script>
   import Navbar from "../view/Navbar.vue";
+  import { useAuthStore } from '../store/authStore';
   export default {
     components: { Navbar },
+    setup() {
+      const authStore = useAuthStore(); // Используем хранилище
+      return { authStore };
+    },
     data() {
       return {
         cups: [0, 1, 2], // Индексы стаканчиков
@@ -93,7 +98,7 @@
         this.ballPosition = Math.floor(Math.random() * 3);
         this.showBall = true;
         this.isSelectable = false;
-  
+
         setTimeout(() => {
           this.shuffleCups();
         }, 1000);
@@ -147,6 +152,40 @@
         this.time = ((endTime - this.startTime) / 1000).toFixed(2);
         // Если игра завершена не из-за полного прохождения, считаем, что количество правильных раундов = (round - 1)
         this.accuracy = won ? 100 : Math.round(((this.round - 1) / this.maxRounds) * 100);
+        this.saveResults(); // Сохраняем результаты после завершения игры
+      },
+      async saveResults() {
+        if (!this.authStore.user) {
+          alert("Пользователь не авторизован. Пожалуйста, войдите в систему.");
+          return;
+        }
+
+        const testId = 9; // ID девятого теста
+        const scorePercentage = this.accuracy; // Точность в процентах
+
+        try {
+          const response = await fetch("http://127.0.0.1:8000/api/result/", {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+              Authorization: `Bearer ${localStorage.getItem("token")}`,
+            },
+            body: JSON.stringify({
+              test: testId, // Используем ID теста
+              user: this.authStore.user.id, // ID пользователя
+              score_percentage: parseFloat(scorePercentage), // Преобразуем в число
+            }),
+          });
+
+          if (response.ok) {
+            alert("Результаты успешно сохранены!");
+          } else {
+            const errorData = await response.json();
+            alert(errorData.error || "Ошибка при сохранении результатов");
+          }
+        } catch (error) {
+          console.error("Ошибка при отправке результатов:", error);
+        }
       },
     },
   };

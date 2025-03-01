@@ -1,7 +1,7 @@
 <template>
   <Navbar />
   <div class="container mt-5 text-center">
-    <h2>Тест №{{ $route.params.name }}</h2>
+    <h2>{{ $route.params.name }}</h2>
     <div id="app">
       <div v-if="currentView === 'start'">
         <h1>Проверка на быстроту реакции и сообразительность</h1>
@@ -40,9 +40,14 @@
 
 <script>
 import Navbar from "../view/Navbar.vue";
+import { useAuthStore } from '../store/authStore'; // Импортируем хранилище
 
 export default {
-  components: {Navbar},
+  components: { Navbar },
+  setup() {
+    const authStore = useAuthStore(); // Используем хранилище
+    return { authStore };
+  },
   data() {
     return {
       currentView: 'start',
@@ -170,6 +175,7 @@ export default {
       this.stopTimer();
       this.totalTime = performance.now() - this.questionStartGlobalTime;
       this.currentView = 'result';
+      this.saveResults(); // Сохраняем результаты после завершения теста
     },
     formatTime(timeInMilliseconds) {
       const totalSeconds = Math.floor(timeInMilliseconds / 1000);
@@ -184,6 +190,39 @@ export default {
     },
     goBack() {
       this.currentView = 'start';
+    },
+    async saveResults() {
+      if (!this.authStore.user) {
+        alert("Пользователь не авторизован. Пожалуйста, войдите в систему.");
+        return;
+      }
+
+      const testId = 3; // ID третьего теста
+      const scorePercentage = this.accuracy; // Точность в процентах
+
+      try {
+        const response = await fetch("http://127.0.0.1:8000/api/result/", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${localStorage.getItem("token")}`,
+          },
+          body: JSON.stringify({
+            test: testId, // Используем ID теста
+            user: this.authStore.user.id, // ID пользователя
+            score_percentage: parseFloat(scorePercentage), // Преобразуем в число
+          }),
+        });
+
+        if (response.ok) {
+          alert("Результаты успешно сохранены!");
+        } else {
+          const errorData = await response.json();
+          alert(errorData.error || "Ошибка при сохранении результатов");
+        }
+      } catch (error) {
+        console.error("Ошибка при отправке результатов:", error);
+      }
     },
   },
 };

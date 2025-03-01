@@ -43,9 +43,13 @@
 
 <script>
 import Navbar from "../view/Navbar.vue";
-
+import { useAuthStore } from '../store/authStore';
 export default {
   components: { Navbar },
+  setup() {
+    const authStore = useAuthStore(); // Используем хранилище
+    return { authStore };
+  },
   data() {
     return {
       gameStarted: false,
@@ -160,6 +164,7 @@ export default {
       } else {
         this.finalMessage = "Игра завершена! Ваш финальный счет: " + this.score;
         clearInterval(this.interval);
+        this.saveResults(); // Сохраняем результаты после завершения игры
       }
     },
     resetGame() {
@@ -181,6 +186,49 @@ export default {
         color += letters[Math.floor(Math.random() * 16)];
       }
       return color;
+    },
+    async saveResults() {
+      if (!this.authStore.user) {
+        alert("Пользователь не авторизован. Пожалуйста, войдите в систему.");
+        return;
+      }
+
+      const testId = 13; // ID тринадцатого теста
+      const scorePercentage = this.accuracy; // Точность в процентах
+      // Логирование данных перед отправкой
+      console.log("Отправляемые данные:", {
+        test: testId,
+        user: this.authStore.user.id,
+        score_percentage: parseFloat(scorePercentage),
+      });
+
+      try {
+        const response = await fetch("http://127.0.0.1:8000/api/result/", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${localStorage.getItem("token")}`,
+          },
+          body: JSON.stringify({
+            test: testId, // Используем ID теста
+            user: this.authStore.user.id, // ID пользователя
+            score_percentage: parseFloat(scorePercentage), // Преобразуем в число
+          }),
+        });
+
+        // Логирование ответа сервера
+        const responseData = await response.json();
+        console.log("Ответ сервера:", responseData);
+
+        if (response.ok) {
+          alert("Результаты успешно сохранены!");
+        } else {
+          const errorData = await response.json();
+          alert(errorData.error || "Ошибка при сохранении результатов");
+        }
+      } catch (error) {
+        console.error("Ошибка при отправке результатов:", error);
+      }
     },
   },
   mounted() {},
