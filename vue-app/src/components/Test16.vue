@@ -10,7 +10,7 @@
       </div>
 
       <div v-else-if="testStarted && !testCompleted">
-        <p>Вопрос {{ currentQuestionIndex + 1 }} из {{ number_correct_answers }}</p>
+        <p>Вопрос {{ currentQuestionIndex + 1 }} из {{ number_all_answers }}</p>
         <img :src="currentQuestion.image" alt="Тест на цветовое зрение" />
         <div class="answers">
           <button
@@ -25,7 +25,7 @@
       </div>
 
       <div v-if="testCompleted">
-        <p>Ваш результат: {{ score }} из {{ number_correct_answers }}</p>
+        <p>Ваш результат: {{ number_correct_answers }} из {{ number_all_answers }}</p>
         <p>Точность: {{ accuracy }}%</p>
         <p>Время выполнения: {{ time }}</p>
         <button class="btn btn-secondary" @click="resetTest">Пройти заново</button>
@@ -65,13 +65,12 @@ export default {
     return {
       testStarted: false,
       testCompleted: false,
-      score: 0,
-      number_all_answers: 0,
-      number_correct_answers: 0,
+      number_correct_answers: 0, // Количество правильных ответов
+      number_all_answers: 0, // Всего вопросов
       currentQuestionIndex: 0,
       startTime: null,
       timeElapsed: 0,
-      time: "00:00:00", // Время в нужном формате
+      time: "00:00:00", // Форматированное время
       timer: null,
       questions: [
         {
@@ -167,7 +166,9 @@ export default {
       return this.questions[this.currentQuestionIndex];
     },
     accuracy() {
-      return ((this.score / this.number_correct_answers) * 100).toFixed(2);
+      return this.number_all_answers > 0
+        ? ((this.number_correct_answers / this.number_all_answers) * 100).toFixed(2)
+        : "0.00";
     },
   },
   methods: {
@@ -180,9 +181,8 @@ export default {
     startTest() {
       this.testStarted = true;
       this.testCompleted = false;
-      this.score = 0;
-      this.number_all_answers = 0;
-      this.number_correct_answers = this.questions.length;
+      this.number_correct_answers = 0;
+      this.number_all_answers = this.questions.length;
       this.currentQuestionIndex = 0;
       this.timeElapsed = 0;
       this.startTime = Date.now();
@@ -194,11 +194,10 @@ export default {
       }, 1000);
     },
     checkAnswer(option) {
-      this.number_all_answers++;
       if (option === this.currentQuestion.correctAnswer) {
-        this.score++;
+        this.number_correct_answers++;
       }
-      if (this.currentQuestionIndex < this.number_correct_answers - 1) {
+      if (this.currentQuestionIndex < this.number_all_answers - 1) {
         this.currentQuestionIndex++;
       } else {
         this.endTest();
@@ -207,7 +206,7 @@ export default {
     endTest() {
       clearInterval(this.timer);
       this.testCompleted = true;
-      this.time = this.formatTime(this.timeElapsed); // Форматируем итоговое время
+      this.time = this.formatTime(this.timeElapsed);
       this.saveResults();
     },
     resetTest() {
@@ -234,7 +233,7 @@ export default {
             test: 16, // ID теста
             user: this.authStore.user.id,
             score_percentage: parseFloat(this.accuracy),
-            time: this.time, // Сохраняем итоговое время
+            time_spent: this.time, // Сохраняем итоговое время
             number_all_answers: this.number_all_answers,
             number_correct_answers: this.number_correct_answers,
           }),

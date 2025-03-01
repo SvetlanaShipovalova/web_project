@@ -16,7 +16,7 @@
           </div>
           <p v-if="!gameEnded">{{ timer }} секунд осталось</p>
           <p v-if="gameEnded">Игра окончена!</p>
-          <p v-if="gameEnded">Попаданий: {{ number_all_answers }} из {{ number_correct_answers }} возможных отличий.</p>
+          <p v-if="gameEnded">Попаданий: {{ number_correct_answers }} из {{ number_all_answers }} возможных отличий.</p>
           <p v-if="gameEnded">Время, затраченное на игру: {{ time }}</p>
           <p v-if="gameEnded">Точность: {{ accuracy }}%</p>
           <button v-if="gameEnded" @click="startGame">Начать заново</button>
@@ -64,8 +64,8 @@ export default {
       timer: 60,
       time: "00:00:00",
       accuracy: 0,
-      number_all_answers: 0,
-      number_correct_answers: 8,
+      number_all_answers: 0,   // Общее количество изображений (вопросов)
+      number_correct_answers: 0, // Сколько пользователь ответил правильно
     };
   },
   methods: {
@@ -75,8 +75,8 @@ export default {
       this.timer = 60;
       this.time = "00:00:00";
       this.highlightedSpots = {};
-      this.number_all_answers = 0;
-      this.number_correct_answers = this.images.length;
+      this.number_correct_answers = 0;
+      this.number_all_answers = this.images.length; // Всегда равно количеству изображений
       this.startTimer();
     },
     checkSpot(index, event) {
@@ -111,14 +111,14 @@ export default {
               }
             }
           };
-          this.number_all_answers++;
+          this.number_correct_answers++;
         }
       }
 
       this.checkGameEnd();
     },
     checkGameEnd() {
-      if (this.number_all_answers === this.number_correct_answers || this.timer <= 0) {
+      if (this.number_correct_answers === this.number_all_answers || this.timer <= 0) {
         this.endGame();
       }
     },
@@ -141,17 +141,16 @@ export default {
       this.time = this.formatTime(elapsedSeconds);
 
       // Корректный расчет точности
-      this.accuracy = this.number_correct_answers > 0 
-        ? ((this.number_all_answers / this.number_correct_answers) * 100).toFixed(2) 
+      this.accuracy = this.number_all_answers > 0 
+        ? ((this.number_correct_answers / this.number_all_answers) * 100).toFixed(2) 
         : "0.00";
 
       this.saveResults();
     },
     formatTime(seconds) {
-      const hours = String(Math.floor(seconds / 3600)).padStart(2, '0');
-      const minutes = String(Math.floor((seconds % 3600) / 60)).padStart(2, '0');
+      const minutes = String(Math.floor(seconds / 60)).padStart(2, '0');
       const sec = String(seconds % 60).padStart(2, '0');
-      return `${hours}:${minutes}:${sec}`;
+      return `00:${minutes}:${sec}`;
     },
     async saveResults() {
       if (!this.authStore.user) {
@@ -218,4 +217,3 @@ export default {
   position: absolute;
 }
 </style>
-

@@ -14,6 +14,9 @@
         <div v-else-if="gameStarted">
           <p>Оставшееся время: {{ formattedTime }}</p>
           <p>Жизни: {{ lives }}</p>
+          <p>Раунд: {{ number_all_answers }}</p>
+          <p>Правильные ответы: {{ number_correct_answers }} / {{ number_all_answers }}</p>
+
           <div class="game-area d-flex justify-content-center">
             <div class="image-container border p-3 mx-2">
               <div v-for="(symbol, index) in leftImage" :key="'left-' + index" class="symbol">
@@ -26,6 +29,7 @@
               </div>
             </div>
           </div>
+
           <p class="instruction">Совпадают ли изображения?</p>
           <div class="choices d-flex justify-content-center">
             <button class="choice-button btn btn-danger mx-2" @click="handleAnswer(false)">Нет</button>
@@ -36,7 +40,7 @@
 
         <div v-if="gameEnded" class="end-message">
           <h3>Игра завершена!</h3>
-          <p>Правильных ответов: {{ number_all_answers }} из {{ number_correct_answers }}</p>
+          <p>Правильные ответы: {{ number_correct_answers }} из {{ number_all_answers }}</p>
           <p>Точность: {{ accuracy }}%</p>
           <p>Время выполнения: {{ time }}</p>
         </div>
@@ -60,7 +64,7 @@ export default {
         return {
             gameStarted: false,
             gameEnded: false,
-            timeRemaining: 30, // Таймер от 30 секунд вниз
+            timeRemaining: 30, 
             timer: null,
             lives: 3,
             symbolsCount: 2,
@@ -70,16 +74,21 @@ export default {
             imagesMatch: false,
             message: "",
             isCorrect: null,
-            number_all_answers: 0,
-            number_correct_answers: 0,
-            startTime: null, // Время начала теста
-            time: "00:00:00", // Фактическое время выполнения (добавлено)
+            number_all_answers: 0, // Количество всех вопросов (всего раундов)
+            number_correct_answers: 0, // Количество правильных ответов
+            startTime: null,
+            time: "00:00:00",
             symbols: ["🔲", "⚫", "⬛", "▷", "▼", "▲", "▽", "🔘"],
         };
     },
     computed: {
         formattedTime() {
             return this.formatTime(this.timeRemaining);
+        },
+        accuracy() {
+            return this.number_all_answers > 0 
+                ? ((this.number_correct_answers / this.number_all_answers) * 100).toFixed(2) 
+                : "0.00";
         },
     },
     methods: {
@@ -90,7 +99,7 @@ export default {
             this.number_all_answers = 0;
             this.number_correct_answers = 0;
             this.timeRemaining = 30;
-            this.startTime = Date.now(); // Фиксируем время начала игры
+            this.startTime = Date.now();
             this.generateImages();
             this.startTimer();
         },
@@ -101,7 +110,7 @@ export default {
                     this.timeRemaining--;
                 } else {
                     clearInterval(this.timer);
-                    this.endGame(true); // true = принудительное завершение по таймеру
+                    this.endGame(true);
                 }
             }, 1000);
         },
@@ -123,7 +132,7 @@ export default {
 
             this.leftImage = leftImage;
             this.rightImage = rightImage;
-            this.number_correct_answers++;
+            this.number_all_answers++; // Увеличиваем счетчик всех вопросов
         },
         handleAnswer(answer) {
             if (this.gameEnded) return;
@@ -131,7 +140,7 @@ export default {
             if (answer === this.imagesMatch) {
                 this.message = "Правильно!";
                 this.isCorrect = true;
-                this.number_all_answers++;
+                this.number_correct_answers++; // Увеличиваем количество правильных ответов
             } else {
                 this.message = "Неправильно!";
                 this.isCorrect = false;
@@ -155,17 +164,8 @@ export default {
             this.gameEnded = true;
             clearInterval(this.timer);
 
-            // Фиксируем время выполнения в переменную time
             const totalSeconds = forceStop ? 30 : Math.min(30, Math.floor((Date.now() - this.startTime) / 1000));
             this.time = this.formatTime(totalSeconds);
-
-            // Точность вычисляется правильно
-            this.accuracy = this.number_correct_answers > 0 
-                ? ((this.number_all_answers / this.number_correct_answers) * 100).toFixed(2) 
-                : "0.00";
-            if (this.number_all_answers === this.number_correct_answers) {
-                this.accuracy = "100.00";
-            }
 
             this.saveResults();
         },
@@ -195,7 +195,7 @@ export default {
                         test: testId,
                         user: this.authStore.user.id,
                         score_percentage: scorePercentage,
-                        time_spent: this.time, // Сохраняем время выполнения
+                        time_spent: this.time,
                         number_all_answers: this.number_all_answers,
                         number_correct_answers: this.number_correct_answers
                     }),

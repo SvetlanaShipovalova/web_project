@@ -6,39 +6,44 @@
       <div>
         <h2>Прогрессивные матрицы Равена</h2>
 
+        <!-- Начало теста -->
         <div v-if="!isTestStarted">
           <button @click="startTest">Начать тест</button>
         </div>
 
+        <!-- Ввод возраста -->
         <div v-if="isTestStarted && !isAgeEntered">
           <label for="age">Введите ваш возраст:</label><br />
-          <input type="number" v-model="age" id="age" min="0" /><br />
+          <input type="number" v-model="age" id="age" min="1" required /><br />
           <button @click="enterAge">Подтвердить возраст</button>
         </div>
 
-        <div v-if="isTestStarted && isAgeEntered">
+        <!-- Основной тест -->
+        <div v-if="isTestStarted && isAgeEntered && !testCompleted">
           <div v-if="currentQuestion">
             <img :src="currentQuestion.image" alt="Matrix" />
             <div class="options">
               <div
-                  v-for="(option, index) in currentQuestion.options"
-                  :key="index"
-                  class="option"
-                  @click="checkAnswer(option)"
+                v-for="(option, index) in currentQuestion.options"
+                :key="index"
+                class="option"
+                @click="checkAnswer(option)"
               >
                 <img :src="option" alt="Option" />
               </div>
             </div>
-            <div>Ограничение по времени: {{ remainingTime }} секунд</div>
-          </div>
-          <div v-else>
-            <h3>Тест завершен!</h3>
-            <p>Процент выполнения: {{ accuracy }}%</p>
-            <p>Затраченное время: {{ time }} секунд</p>
-            <p>{{ intelligenceLevel }}</p>
-            <button @click="restartTest">Начать заново</button>
           </div>
         </div>
+
+        <!-- Завершение теста -->
+        <div v-if="testCompleted">
+          <h3>Тест завершен!</h3>
+          <p>Правильных ответов: {{ number_correct_answers }} из {{ number_all_answers }}</p>
+          <p>Точность: {{ accuracy }}%</p>
+          <p>Затраченное время: {{ time }}</p>
+          <button @click="restartTest">Начать заново</button>
+        </div>
+
         <router-link to="/tests" class="btn btn-secondary">Назад к тестам</router-link>
       </div>
     </div>
@@ -112,18 +117,21 @@ import m_15_3 from '../assets/test_res/m_15.3.png';
 export default {
   components: { Navbar },
   setup() {
-    const authStore = useAuthStore(); // Используем хранилище
+    const authStore = useAuthStore();
     return { authStore };
   },
   data() {
     return {
       currentQuestionIndex: 0,
-      correctAnswersCount: 0, // Счетчик правильных ответов
+      number_correct_answers: 0,
+      number_all_answers: 0,
       isTestStarted: false,
       isAgeEntered: false,
+      testCompleted: false,
       age: null,
-      remainingTime: 1200, // 20 минут в секундах
-      timer: null,
+      startTime: null,
+      timeElapsed: 0,
+      time: "00:00:00", 
       questions: [
         {
           image: m_1,
@@ -201,7 +209,6 @@ export default {
           correct: m_15_2,
         },
       ],
-      time: 0,
     };
   },
   computed: {
@@ -209,86 +216,64 @@ export default {
       return this.questions[this.currentQuestionIndex];
     },
     accuracy() {
-      const coefficient = this.getCoefficient();
-      const totalQuestions = this.questions.length;
-      return ((this.correctAnswersCount / totalQuestions) * 100 * coefficient).toFixed(2); // Процент выполнения
-    },
-    intelligenceLevel() {
-      const score = this.accuracy;
-      if (score > 90) return 'Незаурядный, выдающийся интеллект';
-      else if (score >= 80) return 'Высокий уровень интеллекта';
-      else if (score >= 70) return 'Интеллект выше среднего';
-      else if (score >= 60) return 'Средний уровень интеллекта';
-      else if (score >= 50) return 'Интеллект ниже среднего';
-      else if (score >= 50) return 'Низкий уровень интеллекта';
-      else if (score >= 40) return 'Легкая степень слабоумия';
-      else if (score >= 30) return 'Средняя степень слабоумия';
-      else return 'Тяжелая степень слабоумия';
+      return this.number_all_answers > 0
+        ? ((this.number_correct_answers / this.number_all_answers) * 100).toFixed(2)
+        : "0.00";
     },
   },
   methods: {
     startTest() {
       this.isTestStarted = true;
-      this.correctAnswersCount = 0; // Сброс счетчика
+      this.testCompleted = false;
+      this.number_correct_answers = 0;
+      this.number_all_answers = this.questions.length;
       this.currentQuestionIndex = 0;
-      this.time = 0; // Сброс общего времени
-      this.remainingTime = 1200; // Сброс времени
-      this.startTimer(); // Запуск таймера
+      this.timeElapsed = 0;
+      this.startTime = Date.now();
     },
     enterAge() {
+      if (!this.age || this.age < 1) {
+        alert("Введите корректный возраст!");
+        return;
+      }
       this.isAgeEntered = true;
-    },
-    startTimer() {
-      this.timer = setInterval(() => {
-        if (this.remainingTime > 0) {
-          this.remainingTime--;
-          this.time++; // Увеличиваем общее время
-        } else {
-          clearInterval(this.timer);
-          this.currentQuestionIndex = this.questions.length; // Завершение теста
-          this.saveResults(); // Сохраняем результаты
-        }
-      }, 1000);
+      this.startTime = Date.now(); // Фиксируем старт времени
     },
     checkAnswer(option) {
       if (option === this.currentQuestion.correct) {
-        this.correctAnswersCount++; // Увеличиваем счетчик правильных ответов
+        this.number_correct_answers++;
       }
-      this.nextQuestion();
-    },
-    nextQuestion() {
-      if (this.currentQuestionIndex < this.questions.length - 1) {
+      if (this.currentQuestionIndex < this.number_all_answers - 1) {
         this.currentQuestionIndex++;
       } else {
-        clearInterval(this.timer);
-        this.currentQuestionIndex = this.questions.length; // Завершение теста
-        this.saveResults(); // Сохраняем результаты
+        this.endTest();
       }
     },
-    restartTest() {
-      this.remainingTime = 1200; // Сброс времени
-      this.isTestStarted = false; // Завершение теста
-      this.isAgeEntered = false; // Сброс возраста
-      this.correctAnswersCount = 0; // Сброс счетчика правильных ответов
-      this.currentQuestionIndex = 0; // Сброс индекса вопросов
-      this.time = 0; // Сброс общего времени
-      clearInterval(this.timer); // Остановка таймера
+    endTest() {
+      this.testCompleted = true;
+      this.timeElapsed = Math.floor((Date.now() - this.startTime) / 1000);
+      this.time = this.formatTime(this.timeElapsed);
+      this.$forceUpdate();
+      this.saveResults();
     },
-    getCoefficient() {
-      if (this.age >= 18 && this.age <= 25) return 0.9;
-      else if (this.age >= 26 && this.age <= 35) return 0.8;
-      else if (this.age >= 36 && this.age <= 45) return 0.7;
-      else if (this.age >= 46) return 0.6;
-      else return 1.0; // Для возрастов до 18 лет
+    restartTest() {
+      this.isTestStarted = false;
+      this.isAgeEntered = false;
+      this.testCompleted = false;
+      this.timeElapsed = 0;
+      this.time = "00:00:00";
+    },
+    formatTime(seconds) {
+      const hours = String(Math.floor(seconds / 3600)).padStart(2, "0");
+      const minutes = String(Math.floor((seconds % 3600) / 60)).padStart(2, "0");
+      const sec = String(seconds % 60).padStart(2, "0");
+      return `${hours}:${minutes}:${sec}`;
     },
     async saveResults() {
       if (!this.authStore.user) {
-        alert("Пользователь не авторизован. Пожалуйста, войдите в систему.");
+        alert("Пользователь не авторизован. Войдите в систему.");
         return;
       }
-
-      const testId = 15; // ID пятнадцатого теста
-      const scorePercentage = parseFloat(this.accuracy); // Точность в процентах
 
       try {
         const response = await fetch("http://127.0.0.1:8000/api/result/", {
@@ -298,25 +283,24 @@ export default {
             Authorization: `Bearer ${localStorage.getItem("token")}`,
           },
           body: JSON.stringify({
-            test: testId, // Используем ID теста
-            user: this.authStore.user.id, // ID пользователя
-            score_percentage: scorePercentage, // Точность в процентах
+            test: 15,
+            user: this.authStore.user.id,
+            score_percentage: parseFloat(this.accuracy),
+            time_spent: this.time,
+            number_all_answers: this.number_all_answers,
+            number_correct_answers: this.number_correct_answers,
           }),
         });
 
         if (response.ok) {
           alert("Результаты успешно сохранены!");
         } else {
-          const errorData = await response.json();
-          alert(errorData.error || "Ошибка при сохранении результатов");
+          alert("Ошибка при сохранении результатов");
         }
       } catch (error) {
         console.error("Ошибка при отправке результатов:", error);
       }
     },
-  },
-  beforeUnmount() {
-    clearInterval(this.timer); // Остановка таймера при размонтировании
   },
 };
 </script>
@@ -336,4 +320,3 @@ export default {
   height: auto;
 }
 </style>
-

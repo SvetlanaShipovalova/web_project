@@ -12,9 +12,6 @@
         <p>
           <strong>Цель игры:</strong> упорядочить костяшки по возрастанию, начиная с левого верхнего угла.
         </p>
-        <p>
-          Тренируйте критическое мышление и стратегическое планирование, решая головоломку за минимальное количество ходов!
-        </p>
         <button class="start-button btn btn-primary" @click="startGame">Начать игру</button>
       </div>
 
@@ -37,7 +34,7 @@
       <div v-if="gameEnded" class="end-message">
         <h3>Игра завершена!</h3>
         <p>{{ endMessage }}</p>
-        <p>Правильных элементов: {{ number_all_answers }} из {{ number_correct_answers }}</p>
+        <p>Правильно расположенных плиток: {{ number_correct_answers }} из {{ number_all_answers }}</p>
         <p>Количество ходов: {{ moves }}</p>
         <p>Время прохождения: {{ time }}</p>
         <p>Точность: {{ accuracy }}%</p>
@@ -63,33 +60,26 @@ export default {
       tiles: [],
       moves: 0,
       timeElapsed: 0,
-      time: "00:00:00", // Время в формате ЧЧ:ММ:СС
+      time: "00:00:00",
       accuracy: 100,
       timer: null,
       gameStarted: false,
       gameEnded: false,
       endMessage: '',
-      number_correct_answers: 15,
-      number_all_answers: 0,
+      number_all_answers: 15, // Всего плиток
+      number_correct_answers: 0, // Количество правильно расположенных плиток
       startTime: null,
     };
   },
   computed: {
-  motivationalMessage() {
-    if (this.accuracy >= 95) {
-      return 'Феноменальный результат! Вы прирождённый стратег!';
-    } else if (this.accuracy >= 85) {
-      return 'Отличная работа! Вы проявили аналитическое мышление.';
-    } else if (this.accuracy >= 70) {
-      return 'Хорошо! Немного практики, и результат улучшится.';
-    } else if (this.accuracy >= 50) {
-      return 'Попробуйте улучшить результат!';
-    } else {
+    motivationalMessage() {
+      if (this.accuracy >= 95) return 'Феноменальный результат! Вы прирождённый стратег!';
+      if (this.accuracy >= 85) return 'Отличная работа! Вы проявили аналитическое мышление.';
+      if (this.accuracy >= 70) return 'Хорошо! Немного практики, и результат улучшится.';
+      if (this.accuracy >= 50) return 'Попробуйте улучшить результат!';
       return 'Продолжайте тренироваться для улучшения навыков.';
     }
   },
-},
-
   methods: {
     startGame() {
       clearInterval(this.timer);
@@ -98,9 +88,9 @@ export default {
       this.tiles = this.initializeTiles();
       this.gameStarted = true;
       this.gameEnded = false;
-      this.number_all_answers = 0;
+      this.number_correct_answers = 0;
       this.startTime = Date.now();
-      this.time = "00:00:00"; // Сброс времени
+      this.time = "00:00:00"; 
 
       this.timer = setInterval(() => {
         this.timeElapsed++;
@@ -108,10 +98,9 @@ export default {
       }, 1000);
     },
     updateTimeFormat() {
-      const hours = Math.floor(this.timeElapsed / 3600).toString().padStart(2, '0');
-      const minutes = Math.floor((this.timeElapsed % 3600) / 60).toString().padStart(2, '0');
-      const seconds = (this.timeElapsed % 60).toString().padStart(2, '0');
-      this.time = `${hours}:${minutes}:${seconds}`;
+      const minutes = String(Math.floor(this.timeElapsed / 60)).padStart(2, '0');
+      const seconds = String(this.timeElapsed % 60).padStart(2, '0');
+      this.time = `00:${minutes}:${seconds}`;
     },
     initializeTiles() {
       const tiles = [...Array(15).keys()].map(i => (i + 1).toString());
@@ -132,8 +121,8 @@ export default {
       if (validMoves.includes(index)) {
         [this.tiles[emptyIndex], this.tiles[index]] = [this.tiles[index], this.tiles[emptyIndex]];
         this.moves++;
-        this.number_all_answers = this.calculateCorrectTiles();
-        this.accuracy = ((this.number_all_answers / this.number_correct_answers) * 100).toFixed(2);
+        this.number_correct_answers = this.calculateCorrectTiles();
+        this.accuracy = ((this.number_correct_answers / this.number_all_answers) * 100).toFixed(2);
       }
     },
     testVictory() {
@@ -148,8 +137,8 @@ export default {
       clearInterval(this.timer);
       this.gameEnded = true;
       this.endMessage = message;
-      this.number_all_answers = this.calculateCorrectTiles();
-      this.accuracy = ((this.number_all_answers / this.number_correct_answers) * 100).toFixed(2);
+      this.number_correct_answers = this.calculateCorrectTiles();
+      this.accuracy = ((this.number_correct_answers / this.number_all_answers) * 100).toFixed(2);
       this.timeElapsed = Math.floor((Date.now() - this.startTime) / 1000);
       this.updateTimeFormat();
       this.saveResults();
@@ -173,7 +162,7 @@ export default {
             test: testId, 
             user: this.authStore.user.id, 
             score_percentage: parseFloat(this.accuracy),
-            time_spent: this.time, // Время теперь отправляется в формате "00:00:00"
+            time_spent: this.time, 
             number_all_answers: this.number_all_answers, 
             number_correct_answers: this.number_correct_answers
           }),

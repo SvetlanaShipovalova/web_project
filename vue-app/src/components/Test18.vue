@@ -38,9 +38,9 @@
       <!-- Финальный экран -->
       <div v-if="testFinished" class="end-message">
         <h3>Тест завершен!</h3>
-        <p>Время выполнения: {{ time }}</p>
-        <p>Правильные ответы: {{ number_all_answers }} из {{ number_correct_answers }}</p>
-        <p>Точность: {{ accuracy }}%</p>
+        <p>⏳ Время выполнения: {{ time }}</p>
+        <p>✅ Правильные ответы: {{ number_correct_answers }} из {{ number_all_answers }}</p>
+        <p>🎯 Точность: {{ accuracy }}%</p>
       </div>
       <router-link to="/tests" class="btn btn-secondary">Назад к тестам</router-link>
     </div>
@@ -61,24 +61,24 @@ export default {
     return {
       testStarted: false,
       testFinished: false,
-      timeLeft: 90,
+      timeLeft: 60, // Обратный отсчет с 60 секунд
       timer: null,
       targetNumbers: [],
       gridNumbers: [],
       selectedIndexes: [],
-      elapsedTime: 0,
-      time: "00:00:00",
-      number_all_answers: 0, // Количество правильных ответов пользователя
-      number_correct_answers: 10, // Фиксированное количество заданных чисел
-      number_total_numbers: 100, // Общее количество представленных чисел
-      startTime: null,
+      startTime: null, // Время старта теста
+      time: "00:00:00", // Время выполнения в формате 00:00:00
+      number_all_answers: 10, // Всегда 10 чисел (сколько нужно найти)
+      number_correct_answers: 0, // Сколько нашел правильно
+      number_total_numbers: 100, // Чисел в таблице
     };
   },
   computed: {
     formattedTime() {
-      const minutes = Math.floor(this.timeLeft / 60).toString().padStart(2, "0");
-      const seconds = (this.timeLeft % 60).toString().padStart(2, "0");
-      return `${minutes}:${seconds}`;
+      return `00:00:${this.timeLeft.toString().padStart(2, "0")}`;
+    },
+    accuracy() {
+      return ((this.number_correct_answers / this.number_all_answers) * 100).toFixed(2);
     },
   },
   methods: {
@@ -91,21 +91,18 @@ export default {
     startTest() {
       this.testStarted = true;
       this.testFinished = false;
-      this.targetNumbers = this.generateRandomNumbers(this.number_correct_answers);
+      this.targetNumbers = this.generateRandomNumbers(this.number_all_answers);
       this.gridNumbers = this.generateGridNumbers(this.number_total_numbers, this.targetNumbers);
       this.selectedIndexes = [];
-      this.timeLeft = 90;
       this.startTime = Date.now();
       this.startTimer();
     },
     startTimer() {
-      clearInterval(this.timer);
       this.timer = setInterval(() => {
         if (this.timeLeft > 0) {
-          this.timeLeft -= 1;
+          this.timeLeft--;
         } else {
-          clearInterval(this.timer);
-          this.finishTest();
+          this.finishTest(); // Автозавершение при 0 сек
         }
       }, 1000);
     },
@@ -127,7 +124,7 @@ export default {
       return gridNumbers.sort(() => Math.random() - 0.5);
     },
     toggleCell(index) {
-      if (this.testFinished || this.timeLeft <= 0) return;
+      if (this.testFinished) return;
       const selectedIndex = this.selectedIndexes.indexOf(index);
       if (selectedIndex !== -1) {
         this.selectedIndexes.splice(selectedIndex, 1);
@@ -145,15 +142,14 @@ export default {
     finishTest() {
       this.testFinished = true;
       clearInterval(this.timer);
-      this.elapsedTime = Math.floor((Date.now() - this.startTime) / 1000);
-      this.time = this.formatTime(this.elapsedTime);
-      this.number_all_answers = this.selectedIndexes.filter(index => this.targetNumbers.includes(this.gridNumbers[index])).length;
-      this.accuracy = ((this.number_all_answers / this.number_correct_answers) * 100).toFixed(2);
+      const elapsedSeconds = 60 - this.timeLeft; // Сколько секунд прошло
+      this.time = this.formatTime(elapsedSeconds); // Запись времени выполнения в формате 00:00:00
+      this.number_correct_answers = this.selectedIndexes.filter(index => this.targetNumbers.includes(this.gridNumbers[index])).length;
       this.saveResults();
     },
     async saveResults() {
       if (!this.authStore.user) {
-        alert("Пользователь не авторизован. Пожалуйста, войдите в систему.");
+        alert("Пользователь не авторизован. Войдите в систему.");
         return;
       }
 
@@ -168,9 +164,9 @@ export default {
             test: 18, // ID теста
             user: this.authStore.user.id,
             score_percentage: parseFloat(this.accuracy),
-            time: this.time,
-            number_all_answers: this.number_all_answers,
-            number_correct_answers: this.number_correct_answers,
+            time: this.time, // Время выполнения
+            number_all_answers: this.number_all_answers, // Всегда 10
+            number_correct_answers: this.number_correct_answers, // Сколько правильно
           }),
         });
 
@@ -186,53 +182,52 @@ export default {
       }
     },
   },
-  beforeDestroy() {
+  beforeUnmount() {
     clearInterval(this.timer);
   },
 };
 </script>
-  
-  <style scoped>
-  .container {
-    max-width: 700px;
-  }
-  .numbers-row {
-    display: flex;
-    justify-content: center;
-    gap: 10px;
-    font-size: 18px;
-    font-weight: bold;
-  }
-  .grid {
-    display: grid;
-    grid-template-columns: repeat(10, 1fr);
-    gap: 5px;
-    margin-top: 20px;
-  }
-  .grid div {
-    width: 50px;
-    height: 50px;
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    background: #f8f9fa;
-    border: 1px solid #ddd;
-    cursor: pointer;
-    font-size: 16px;
-    font-weight: bold;
-    user-select: none;
-  }
-  .grid div.highlighted {
-    background: #b0e0e6;
-  }
-  .grid div.correct {
-    background: #98fb98;
-  }
-  .grid div.wrong {
-    background: #f4cccc;
-  }
-  .end-message {
-    margin-top: 20px;
-  }
-  </style>
-  
+
+<style scoped>
+.container {
+  max-width: 700px;
+}
+.numbers-row {
+  display: flex;
+  justify-content: center;
+  gap: 10px;
+  font-size: 18px;
+  font-weight: bold;
+}
+.grid {
+  display: grid;
+  grid-template-columns: repeat(10, 1fr);
+  gap: 5px;
+  margin-top: 20px;
+}
+.grid div {
+  width: 50px;
+  height: 50px;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  background: #f8f9fa;
+  border: 1px solid #ddd;
+  cursor: pointer;
+  font-size: 16px;
+  font-weight: bold;
+  user-select: none;
+}
+.grid div.highlighted {
+  background: #b0e0e6;
+}
+.grid div.correct {
+  background: #98fb98;
+}
+.grid div.wrong {
+  background: #f4cccc;
+}
+.end-message {
+  margin-top: 20px;
+}
+</style>

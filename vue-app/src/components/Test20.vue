@@ -38,11 +38,39 @@
 
     <!-- Результаты -->
     <div v-if="isSubmitted" class="results">
-      <div class="accuracy">
-        <p>Точность: {{ accuracy }}%</p>
-        <p>Время выполнения: {{ time }}</p>
-        <p>Правильные ответы: {{ number_all_answers }} из {{ number_correct_answers }}</p>
+      <h3>Результаты:</h3>
+      <p>Точность: {{ accuracy }}%</p>
+      <p>Время выполнения: {{ time }}</p>
+      <p>Правильные ответы: {{ number_correct_answers }} из {{ number_all_answers }}</p>
+
+      <!-- Таблицы правильных и пользовательских ответов -->
+      <div class="result-tables">
+        <div>
+          <h4>Правильные ответы:</h4>
+          <table class="correct-table">
+            <tr v-for="(row, rowIndex) in results" :key="'result-row-' + rowIndex">
+              <td v-for="(value, colIndex) in row" :key="'correct-' + colIndex">
+                {{ value }}
+              </td>
+            </tr>
+          </table>
+        </div>
+        <div>
+          <h4>Ваши ответы:</h4>
+          <table class="user-table">
+            <tr v-for="(row, rowIndex) in userInputs" :key="'input-row-' + rowIndex">
+              <td
+                v-for="(value, colIndex) in row"
+                :key="'input-' + colIndex"
+                :class="{ correct: value == results[rowIndex][colIndex] }"
+              >
+                {{ value }}
+              </td>
+            </tr>
+          </table>
+        </div>
       </div>
+
       <div class="restart-btn-container">
         <button @click="resetTest" class="restart-btn">Начать заново</button>
       </div>
@@ -78,8 +106,8 @@ export default {
       startTimeValue: null,
       timeElapsed: 0,
       time: "00:00:00",
-      number_all_answers: 0,
-      number_correct_answers: 15,
+      number_all_answers: 15, 
+      number_correct_answers: 0, 
     };
   },
   computed: {
@@ -95,24 +123,14 @@ export default {
         });
       });
 
-      this.number_all_answers = correctAnswers;
+      this.number_correct_answers = correctAnswers;
       return ((correctAnswers / totalCells) * 100).toFixed(2);
     },
   },
   methods: {
     startTest() {
-      const introMessages = ["Приготовились", "Ряд №1"];
-      let index = 0;
-
-      const introInterval = setInterval(() => {
-        this.message = introMessages[index];
-        index++;
-
-        if (index >= introMessages.length) {
-          clearInterval(introInterval);
-          this.startRow();
-        }
-      }, 1000);
+      this.startTimeValue = Date.now();
+      this.startRow();
     },
     startRow() {
       if (this.rowIndex >= 5) {
@@ -157,10 +175,6 @@ export default {
       this.currentNumber = this.numbers[this.numIndex];
       this.numIndex++;
 
-      if (this.numIndex === 1 && !this.startTimeValue) {
-        this.startTimeValue = Date.now();
-      }
-
       setTimeout(() => {
         this.currentNumber = null;
         setTimeout(() => {
@@ -176,7 +190,6 @@ export default {
     },
     resetTest() {
       this.stage = "intro";
-      this.message = "Приготовились";
       this.rowIndex = 0;
       this.numIndex = 0;
       this.results = Array.from({ length: 5 }, () => Array(3).fill(null));
@@ -194,7 +207,7 @@ export default {
       }
 
       try {
-        const response = await fetch("http://127.0.0.1:8000/api/result/", {
+        await fetch("http://127.0.0.1:8000/api/result/", {
           method: "POST",
           headers: {
             "Content-Type": "application/json",
@@ -210,12 +223,7 @@ export default {
           }),
         });
 
-        if (response.ok) {
-          alert("Результаты успешно сохранены!");
-        } else {
-          const errorData = await response.json();
-          alert(errorData.error || "Ошибка при сохранении результатов");
-        }
+        alert("Результаты успешно сохранены!");
       } catch (error) {
         console.error("Ошибка при отправке результатов:", error);
       }
@@ -223,6 +231,7 @@ export default {
   },
 };
 </script>
+
 
 <style scoped>
 .memory-test {

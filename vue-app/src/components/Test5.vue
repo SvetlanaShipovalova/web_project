@@ -18,8 +18,8 @@
       <!-- Игровой экран -->
       <div v-else-if="gameStarted">
         <p>Оставшееся время: {{ formattedTime }}</p>
-        <p>Раунд: {{ currentRound }} / {{ number_correct_answers }}</p>
-        <p>Правильные ответы: {{ number_all_answers }} / {{ number_correct_answers }}</p>
+        <p>Раунд: {{ currentRound }} / {{ number_all_answers }}</p>
+        <p>Правильные ответы: {{ number_correct_answers }} / {{ number_all_answers }}</p>
         <div class="game-area d-flex flex-wrap justify-content-center">
           <div v-for="i in 30" :key="i" class="square"
                :class="{ active: i === activeSquare }" @click="handleClick(i)">
@@ -31,7 +31,7 @@
       <div v-if="gameEnded" class="end-message">
         <h3>Игра завершена!</h3>
         <p>Общее время: {{ time }}</p>
-        <p>Правильные ответы: {{ number_all_answers }} / {{ number_correct_answers }}</p>
+        <p>Правильные ответы: {{ number_correct_answers }} / {{ number_all_answers }}</p>
         <p>Точность: {{ accuracy }}%</p>
         <button class="btn btn-success" @click="restartGame">Пройти снова</button>
       </div>
@@ -58,8 +58,8 @@ export default {
       timeElapsed: 0, // Общее время в секундах
       time: "00:00:00", // Время в формате ЧЧ:ММ:СС
       activeSquare: null,
-      number_all_answers: 0, // Количество правильных ответов
-      number_correct_answers: 50, // Всего 50 раундов
+      number_all_answers: 50, // Всего 50 раундов
+      number_correct_answers: 0, // Количество правильных ответов
       currentRound: 0,
       startTime: null,
       gameInterval: null,
@@ -72,8 +72,8 @@ export default {
       return `00:${minutes}:${seconds}`;
     },
     accuracy() {
-      return this.number_correct_answers > 0
-        ? ((this.number_all_answers / this.number_correct_answers) * 100).toFixed(2)
+      return this.number_all_answers > 0
+        ? ((this.number_correct_answers / this.number_all_answers) * 100).toFixed(2)
         : 0;
     },
   },
@@ -81,7 +81,7 @@ export default {
     startGame() {
       this.gameStarted = true;
       this.gameEnded = false;
-      this.number_all_answers = 0;
+      this.number_correct_answers = 0;
       this.currentRound = 0;
       this.timeElapsed = 0;
       this.timeLeft = 50;
@@ -91,7 +91,7 @@ export default {
       this.generateRandomSquare();
 
       this.gameInterval = setInterval(() => {
-        if (this.currentRound < this.number_correct_answers) {
+        if (this.currentRound < this.number_all_answers) {
           this.currentRound++;
           this.timeLeft--;
           this.timeElapsed++;
@@ -113,7 +113,7 @@ export default {
     },
     handleClick(index) {
       if (index === this.activeSquare) {
-        this.number_all_answers++; // Увеличиваем количество правильных ответов
+        this.number_correct_answers++; // Увеличиваем количество правильных ответов
         this.generateRandomSquare();
       }
     },

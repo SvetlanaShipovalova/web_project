@@ -29,7 +29,7 @@
       <div v-else-if="currentView === 'result'">
         <h3>Результаты</h3>
         <p>Время выполнения: {{ time }}</p>
-        <p>Правильные ответы: {{ number_all_answers }} / {{ number_correct_answers }}</p>
+        <p>Правильные ответы: {{ number_correct_answers }} / {{ number_all_answers }}</p>
         <p>Точность: {{ accuracy }}%</p>
         <button class="btn btn-success" @click="restartGame">Начать заново</button>
       </div>
@@ -54,8 +54,8 @@ export default {
       cards: [],
       flippedCards: [],
       matchedPairs: [],
-      number_all_answers: 0,  // Сколько отгадал (найденные пары)
-      number_correct_answers: 8,  // Всего пар в тесте
+      number_all_answers: 8, // Всего пар в тесте
+      number_correct_answers: 0, // Сколько отгадал (найденные пары)
       remainingTime: 60, // Таймер 60 секунд
       timeElapsed: 0, // Время в секундах
       time: "00:00:00", // Форматированное время
@@ -70,7 +70,9 @@ export default {
       return `00:${minutes}:${seconds}`;
     },
     accuracy() {
-      return ((this.number_all_answers / this.number_correct_answers) * 100).toFixed(2);
+      return this.number_all_answers > 0 
+        ? ((this.number_correct_answers / this.number_all_answers) * 100).toFixed(2) 
+        : 0;
     },
   },
   methods: {
@@ -78,7 +80,7 @@ export default {
       this.currentView = 'test';
       this.cards = this.generateCards();
       this.matchedPairs = [];
-      this.number_all_answers = 0;
+      this.number_correct_answers = 0;
       this.remainingTime = 60;
       this.timeElapsed = 0;
       this.time = "00:00:00";
@@ -119,31 +121,31 @@ export default {
       }
     },
     checkForMatch() {
-  const [firstCard, secondCard] = this.flippedCards;
-  if (firstCard.value === secondCard.value) {
-    firstCard.matched = true;
-    secondCard.matched = true;
-    this.matchedPairs.push(firstCard);
-    this.number_all_answers++; // Увеличиваем счетчик найденных пар
+      const [firstCard, secondCard] = this.flippedCards;
+      if (firstCard.value === secondCard.value) {
+        firstCard.matched = true;
+        secondCard.matched = true;
+        this.matchedPairs.push(firstCard);
+        this.number_correct_answers++; // Увеличиваем счетчик найденных пар
 
-    // ✅ Если нашли все пары, завершаем игру
-    if (this.number_all_answers === this.number_correct_answers) {
-      this.endGame();
-    }
-  } else {
-    setTimeout(() => {
-      firstCard.flipped = false;
-      secondCard.flipped = false;
-    }, 1000);
-  }
-  this.flippedCards = [];
-},
-endGame() {
-  clearInterval(this.gameTimer); // ✅ Останавливаем таймер
-  this.time = this.formatTime(this.timeElapsed); // Фиксируем финальное время
-  this.currentView = 'result';
-  this.saveResults(); // Сохраняем результаты
-},
+        // ✅ Если нашли все пары, завершаем игру
+        if (this.number_correct_answers === this.number_all_answers) {
+          this.endGame();
+        }
+      } else {
+        setTimeout(() => {
+          firstCard.flipped = false;
+          secondCard.flipped = false;
+        }, 1000);
+      }
+      this.flippedCards = [];
+    },
+    endGame() {
+      clearInterval(this.gameTimer); // ✅ Останавливаем таймер
+      this.time = this.formatTime(this.timeElapsed); // Фиксируем финальное время
+      this.currentView = 'result';
+      this.saveResults(); // Сохраняем результаты
+    },
     restartGame() {
       this.currentView = 'start';
       this.remainingTime = 60;
@@ -189,7 +191,6 @@ endGame() {
   },
 };
 </script>
-
 
 <style scoped>
 .container {
@@ -237,4 +238,3 @@ endGame() {
   margin-top: 20px;
 }
 </style>
-  
