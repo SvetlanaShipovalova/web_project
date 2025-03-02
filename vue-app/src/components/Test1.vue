@@ -76,7 +76,6 @@ export default {
       gridDimensions: { rows: 4, cols: 3 },
       time: "00:00:00",
       number_all_answers: 48, // Общее количество вопросов
-      number_correct_answers: 48, // Количество правильных ответов
     };
   },
   computed: {
@@ -85,6 +84,9 @@ export default {
       return totalClicks > 0
         ? (((totalClicks - this.totalMissClicks) / totalClicks) * 100).toFixed(2)
         : 0;
+    },
+    number_correct_answers() {
+      return this.number_all_answers - this.totalMissClicks; // Вычисляем количество правильных ответов
     },
   },
   methods: {
@@ -130,7 +132,6 @@ export default {
         }
       } else {
         this.missClicks += 1;
-        this.number_correct_answers -= 1; // Уменьшаем количество правильных ответов при ошибке
         if (this.missClicks >= 3) {
           this.restartRound();
         }
@@ -138,7 +139,6 @@ export default {
     },
     handleTimeout() {
       this.missClicks += 1;
-      this.number_correct_answers -= 1; // Уменьшаем количество правильных ответов при тайм-ауте
       if (this.missClicks >= 3) {
         this.restartRound();
       }
@@ -183,7 +183,6 @@ export default {
       this.round = 1;
       this.totalMissClicks = 0;
       this.time = "00:00:00";
-      this.number_correct_answers = 48; // Сбрасываем количество правильных ответов
       this.startTest();
     },
     goBack() {
@@ -191,7 +190,6 @@ export default {
       this.round = 1;
       this.totalMissClicks = 0;
       this.time = "00:00:00";
-      this.number_correct_answers = 48; // Сбрасываем количество правильных ответов
     },
     async saveResults() {
       if (!this.authStore.user) {
@@ -203,7 +201,7 @@ export default {
       const scorePercentage = this.accuracy;
 
       try {
-        const response = await fetch("http://127.0.0.1:8000/api/result/", {
+        const response = await fetch("https://svetasy.pythonanywhere.com/api/result/", {
           method: "POST",
           headers: {
             "Content-Type": "application/json",
