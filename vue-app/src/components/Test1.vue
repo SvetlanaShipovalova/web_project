@@ -38,8 +38,8 @@
         <p>Ошибок: {{ totalMissClicks }}</p>
         <p>Точность: {{ accuracy }}%</p>
         <p>Время: {{ time }}</p>
-        <p>Вопросов: {{ number_correct_answers }}</p>
-        <p>Верных ответов: {{ number_all_answers }}</p>
+        <p>Вопросов: {{ number_all_answers }}</p>
+        <p>Верных ответов: {{ number_correct_answers }}</p>
         <button @click="restartTest" id="text">Повторить попытку</button>
         <button @click="goBack" id="text">Вернуться назад</button>
       </div>
@@ -75,8 +75,8 @@ export default {
       totalMissClicks: 0,
       gridDimensions: { rows: 4, cols: 3 },
       time: "00:00:00",
-      number_correct_answers: 48, // Общее количество вопросов
-      number_all_answers: 48, // Количество правильных ответов
+      number_all_answers: 48, // Общее количество вопросов
+      number_correct_answers: 48, // Количество правильных ответов
     };
   },
   computed: {
@@ -210,8 +210,8 @@ export default {
             user: this.authStore.user.id,
             score_percentage: parseFloat(scorePercentage),
             time: this.time,
-            number_all_answers: this.number_all_answers - this.totalMissClicks,
-            number_correct_answers: this.number_correct_answers,
+            number_correct_answers: this.number_correct_answers - this.totalMissClicks,
+            number_all_answers: this.number_all_answers,
             accuracy: parseFloat(scorePercentage),
           }),
         });

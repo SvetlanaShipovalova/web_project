@@ -65,7 +65,7 @@
         <h2>Игра окончена!</h2>
         <p>Вы набрали: {{ accuracy }}%!</p>
         <p>Время выполнения: {{ timeFormatted }}</p>
-        <p>Правильных ответов: {{ number_all_answers }} из {{ number_correct_answers }}</p>
+        <p>Правильных ответов: {{ number_correct_answers }} из {{ number_all_answers }}</p>
         <button @click="restartGame">Начать заново</button>
       </div>
     </div>
@@ -141,8 +141,8 @@ export default {
       timer: null,
       shuffledAnimals: [],
       shuffledSounds: [],
-      number_all_answers: 0,
-      number_correct_answers: 10,
+      number_correct_answers: 0,
+      number_all_answers: 10,
       accuracy: 0,
     };
   },
@@ -151,7 +151,7 @@ export default {
       const correctPairs = this.selectedPairs.filter(
         pair => pair.animal.name === pair.sound.name
       ).length;
-      this.number_all_answers = correctPairs;
+      this.number_correct_answers = correctPairs;
       return ((correctPairs / this.animals.length) * 100).toFixed(2) || 0;
     },
   },
@@ -276,8 +276,8 @@ export default {
             user: this.authStore.user.id,
             score_percentage: this.accuracy,
             time: this.timeFormatted,
-            number_all_answers: this.number_all_answers,
             number_correct_answers: this.number_correct_answers,
+            number_all_answers: this.number_all_answers,
             accuracy: this.accuracy,
           }),
         });

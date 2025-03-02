@@ -23,7 +23,7 @@
 
       <div v-else-if="currentView === 'result'">
         <h1>Результаты теста</h1>
-        <p>Правильных ответов: {{ number_all_answers }} из {{ number_correct_answers }}</p>
+        <p>Правильных ответов: {{ number_correct_answers }} из {{ number_all_answers }}</p>
         <p>Ошибок: {{ missClicks }}
           <span v-if="missClicks > 0"> (Вопросы: {{ errorQuestions.join(', ') }})</span>
         </p>
@@ -60,8 +60,8 @@ export default {
       questionStartTime: 0,
       questionStartGlobalTime: 0,
       errorQuestions: [],
-      number_correct_answers: 0, 
       number_all_answers: 0, 
+      number_correct_answers: 0, 
       questions: [
         {
           text: 'Найдите лишнее:',
@@ -121,7 +121,7 @@ export default {
       return this.questions[this.currentQuestionIndex];
     },
     accuracy() {
-      return ((this.number_all_answers / this.number_correct_answers) * 100).toFixed(2);
+      return ((this.number_correct_answers / this.number_all_answers) * 100).toFixed(2);
     }
   },
   methods: {
@@ -136,8 +136,8 @@ export default {
       this.errorQuestions = [];
       this.questionStartGlobalTime = performance.now();
       this.questionStartTime = performance.now();
-      this.number_correct_answers = this.questions.length;
-      this.number_all_answers = 0; 
+      this.number_all_answers = this.questions.length;
+      this.number_correct_answers = 0; 
       this.startTimer();
     },
     startTimer() {
@@ -153,7 +153,7 @@ export default {
       const questionTime = (performance.now() - this.questionStartTime) / 1000;
 
       if (selectedOption === this.currentQuestion.correct) {
-        this.number_all_answers++; 
+        this.number_correct_answers++; 
       } else {
         this.missClicks++;
         this.errorQuestions.push(this.currentQuestionIndex + 1);
@@ -212,8 +212,8 @@ export default {
             user: this.authStore.user.id,
             score_percentage: parseFloat(scorePercentage), 
             time: this.formatTime(this.totalTime),
-            number_all_answers: this.number_all_answers,
-            number_correct_answers: this.number_correct_answers, 
+            number_correct_answers: this.number_correct_answers,
+            number_all_answers: this.number_all_answers, 
             accuracy: parseFloat(scorePercentage), 
           }),
         });

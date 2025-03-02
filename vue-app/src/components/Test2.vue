@@ -28,8 +28,8 @@
         <p>Раунд {{ round }} завершён!</p>
         <p>Точность: {{ accuracy }}%</p>
         <p>Время: {{ time }}</p>
-        <p>Вопросов: {{ number_correct_answers }}</p>
-        <p>Верных ответов: {{ number_all_answers }}</p>
+        <p>Вопросов: {{ number_all_answers }}</p>
+        <p>Верных ответов: {{ number_correct_answers }}</p>
         <button @click="restartTest">Повторить</button>
         <button @click="goBack">Назад</button>
       </div>
@@ -61,14 +61,14 @@ export default {
       results: [],
       userInput: "",
       time: "00:00:00",
-      number_correct_answers: 7,
-      number_all_answers: 7, 
+      number_all_answers: 7,
+      number_correct_answers: 7, 
     };
   },
   computed: {
     accuracy() {
-      return this.number_correct_answers > 0
-        ? ((this.number_all_answers / this.number_correct_answers) * 100).toFixed(2)
+      return this.number_all_answers > 0
+        ? ((this.number_correct_answers / this.number_all_answers) * 100).toFixed(2)
         : 0;
     },
   },
@@ -113,7 +113,7 @@ export default {
           if (parseInt(this.userInput) === this.currentDigit) {
             // Правильный ответ
           } else {
-            this.number_all_answers -= 1;
+            this.number_correct_answers -= 1;
           }
           this.endRound();
         }
@@ -121,7 +121,7 @@ export default {
         if (parseInt(this.userInput) === this.currentDigit) {
           // Правильный ответ
         } else {
-          this.number_all_answers -= 1; 
+          this.number_correct_answers -= 1; 
         }
         this.endRound();
       }
@@ -143,14 +143,14 @@ export default {
     restartTest() {
       this.round = 1;
       this.results = [];
-      this.number_all_answers = 7;
+      this.number_correct_answers = 7;
       this.userInput = "";
       this.currentView = 'start';
     },
     goBack() {
       this.currentView = 'start';
       this.round = 1;
-      this.number_all_answers = 7;
+      this.number_correct_answers = 7;
     },
     async saveResults() {
       if (!this.authStore.user) {
@@ -173,8 +173,8 @@ export default {
             user: this.authStore.user.id,
             score_percentage: parseFloat(scorePercentage),
             time: this.time,
-            number_all_answers: this.number_all_answers,
             number_correct_answers: this.number_correct_answers,
+            number_all_answers: this.number_all_answers,
             accuracy: parseFloat(scorePercentage),
           }),
         });
