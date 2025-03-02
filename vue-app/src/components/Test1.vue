@@ -130,6 +130,7 @@ export default {
         }
       } else {
         this.missClicks += 1;
+        this.number_correct_answers -= 1; // Уменьшаем количество правильных ответов при ошибке
         if (this.missClicks >= 3) {
           this.restartRound();
         }
@@ -137,6 +138,7 @@ export default {
     },
     handleTimeout() {
       this.missClicks += 1;
+      this.number_correct_answers -= 1; // Уменьшаем количество правильных ответов при тайм-ауте
       if (this.missClicks >= 3) {
         this.restartRound();
       }
@@ -181,6 +183,7 @@ export default {
       this.round = 1;
       this.totalMissClicks = 0;
       this.time = "00:00:00";
+      this.number_correct_answers = 48; // Сбрасываем количество правильных ответов
       this.startTest();
     },
     goBack() {
@@ -188,6 +191,7 @@ export default {
       this.round = 1;
       this.totalMissClicks = 0;
       this.time = "00:00:00";
+      this.number_correct_answers = 48; // Сбрасываем количество правильных ответов
     },
     async saveResults() {
       if (!this.authStore.user) {
@@ -199,7 +203,7 @@ export default {
       const scorePercentage = this.accuracy;
 
       try {
-        const response = await fetch("http://127.0.0.1:8000/api/result/", {
+        const response = await fetch("https://svetasy.pythonanywhere.com/api/result/", {
           method: "POST",
           headers: {
             "Content-Type": "application/json",
@@ -210,7 +214,7 @@ export default {
             user: this.authStore.user.id,
             score_percentage: parseFloat(scorePercentage),
             time: this.time,
-            number_correct_answers: this.number_correct_answers - this.totalMissClicks,
+            number_correct_answers: this.number_correct_answers,
             number_all_answers: this.number_all_answers,
             accuracy: parseFloat(scorePercentage),
           }),
