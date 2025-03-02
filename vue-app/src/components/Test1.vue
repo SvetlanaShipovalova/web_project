@@ -201,7 +201,7 @@ export default {
       const scorePercentage = this.accuracy;
 
       try {
-        const response = await fetch("https://svetasy.pythonanywhere.com/api/result/", {
+        const response = await fetch("http://127.0.0.1:8000/api/result/", {
           method: "POST",
           headers: {
             "Content-Type": "application/json",
