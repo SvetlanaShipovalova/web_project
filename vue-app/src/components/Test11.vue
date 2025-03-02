@@ -14,9 +14,13 @@
             <div class="card-container">
               <div
                 v-for="(animal, index) in shuffledAnimals"
-                :key="index"
+                :key="animal.name"
                 class="card"
-                :class="{ matched: isMatched(animal) }"
+                :class="{ 
+                  matched: isMatched(animal),
+                  'selected-animal': selectedAnimals.includes(animal),
+                  incorrect: isIncorrect(animal)
+                }"
                 @click="selectAnimal(animal)"
               >
                 <img :src="animal.image" alt="animal" />
@@ -28,7 +32,16 @@
           <div class="sound-cards">
             <h4>Карточки со звуками</h4>
             <div class="sound-container">
-              <div v-for="(sound, index) in shuffledSounds" :key="index" class="sound-card">
+              <div 
+                v-for="(sound, index) in shuffledSounds"
+                :key="sound.name" 
+                class="sound-card"
+                :class="{ 
+                  matched: isMatched(sound),
+                  'selected-sound': selectedSounds.includes(sound),
+                  incorrect: isIncorrect(sound)
+                }"
+              >
                 <audio controls>
                   <source :src="sound.audio" type="audio/mpeg">
                 </audio>
@@ -39,21 +52,26 @@
             </div>
           </div>
         </div>
+        <div v-if="selectedPairs.length > 0">
+          <h4>Правильно подобранные пары:</h4>
+          <ul>
+            <li v-for="(pair, index) in selectedPairs" :key="index">
+              {{ pair.animal.name }} - {{ pair.sound.name }}
+            </li>
+          </ul>
+        </div>
       </div>
       <div v-else>
         <h2>Игра окончена!</h2>
         <p>Вы набрали: {{ accuracy }}%!</p>
-        <p>Время выполнения: {{ time }} секунд!</p>
+        <p>Время выполнения: {{ timeFormatted }}</p>
+        <p>Правильных ответов: {{ number_all_answers }} из {{ number_correct_answers }}</p>
         <button @click="restartGame">Начать заново</button>
       </div>
     </div>
     <router-link to="/tests" class="btn btn-secondary">Назад к тестам</router-link>
   </div>
 </template>
-
-<!--<script setup>-->
-<!--import Navbar from "../view/Navbar.vue";-->
-<!--</script>-->
 
 <script>
 import Navbar from "../view/Navbar.vue";
@@ -84,7 +102,7 @@ import { useAuthStore } from '../store/authStore';
 export default {
   components: { Navbar },
   setup() {
-    const authStore = useAuthStore(); // Используем хранилище
+    const authStore = useAuthStore();
     return { authStore };
   },
   data() {
@@ -113,21 +131,28 @@ export default {
         { name: "Утка", audio: duckSound },
         { name: "Кабан", audio: wildBoarSound },
       ],
-      matchedPairs: [],
-      selectedAnimal: null,
-      selectedSound: null,
-      time: 0,
-      timeLeft: 60,
+      selectedPairs: [], 
+      selectedAnimals: [], 
+      selectedSounds: [], 
+      timeLeft: 60, 
+      timeFormatted: "00:00:00",
       gameFinished: false,
       gameStarted: false,
       timer: null,
       shuffledAnimals: [],
-      shuffledSounds: []
+      shuffledSounds: [],
+      number_all_answers: 0,
+      number_correct_answers: 10,
+      accuracy: 0,
     };
   },
   computed: {
-    accuracy() {
-      return (this.matchedPairs.length / this.animals.length * 100).toFixed(2) || 0;
+    computedAccuracy() {
+      const correctPairs = this.selectedPairs.filter(
+        pair => pair.animal.name === pair.sound.name
+      ).length;
+      this.number_all_answers = correctPairs;
+      return ((correctPairs / this.animals.length) * 100).toFixed(2) || 0;
     },
   },
   methods: {
@@ -139,58 +164,89 @@ export default {
     },
     selectAnimal(animal) {
       if (this.isMatched(animal)) return;
-      this.selectedAnimal = animal;
+      this.selectedAnimals = [animal];
       this.checkMatch();
     },
     selectSound(sound) {
-      this.selectedSound = sound;
+      if (this.isMatched(sound)) return;
+      this.selectedSounds = [sound];
       this.checkMatch();
     },
+    isMatched(item) {
+      return this.selectedPairs.some(
+        pair => pair.animal.name === item.name || pair.sound.name === item.name
+      );
+    },
+    isIncorrect(item) {
+      return item.incorrect;
+    },
     checkMatch() {
-      if (this.selectedAnimal && this.selectedSound) {
-        if (this.selectedAnimal.name === this.selectedSound.name && !this.isMatched(this.selectedAnimal)) {
-          this.matchedPairs.push(this.selectedAnimal);
-        }
-        this.selectedAnimal = null;
-        this.selectedSound = null;
+      if (this.selectedAnimals.length > 0 && this.selectedSounds.length > 0) {
+        const animal = this.selectedAnimals[0];
+        const sound = this.selectedSounds[0];
 
-        if (this.matchedPairs.length === this.animals.length) {
+        if (animal.name === sound.name) {
+          this.selectedPairs.push({
+            animal: animal,
+            sound: sound,
+          });
+
+          console.log("Пара добавлена:", animal.name, sound.name);
+        } else {
+          this.$nextTick(() => {
+            animal.incorrect = true;
+            sound.incorrect = true;
+          });
+        }
+
+        this.selectedAnimals = [];
+        this.selectedSounds = [];
+
+        if (this.selectedPairs.length === this.animals.length) {
+          console.log("Все пары сопоставлены!");
           this.endGame();
         }
       }
     },
-    isMatched(animal) {
-      return this.matchedPairs.includes(animal);
+    formatTime(seconds) {
+      const hours = Math.floor(seconds / 3600);
+      const minutes = Math.floor((seconds % 3600) / 60);
+      const secs = seconds % 60;
+      return `${String(hours).padStart(2, '0')}:${String(minutes).padStart(2, '0')}:${String(secs).padStart(2, '0')}`;
     },
     startTimer() {
-      const startTime = Date.now(); // Запоминаем время начала игры
+      const startTime = Date.now();
       this.timer = setInterval(() => {
+        const elapsedSeconds = Math.floor((Date.now() - startTime) / 1000);
+        this.timeFormatted = this.formatTime(elapsedSeconds);
+
         this.timeLeft--;
         if (this.timeLeft <= 0) {
           clearInterval(this.timer);
           this.endGame();
         }
       }, 1000);
-
-      // Устанавливаем интервал для подсчета времени выполнения
-      setInterval(() => {
-        if (this.gameStarted && !this.gameFinished) {
-          this.time = Math.floor((Date.now() - startTime) / 1000); // Обновляем общее время
-        }
-      }, 1000);
     },
     endGame() {
       this.gameFinished = true;
       clearInterval(this.timer);
-      this.saveResults(); // Сохраняем результаты после завершения игры
+      console.log("Игра завершена!");
+      this.accuracy = parseFloat(this.computedAccuracy);
+      this.saveResults();
     },
     restartGame() {
-      this.score = 0;
+      this.animals.forEach(animal => (animal.incorrect = false));
+      this.sounds.forEach(sound => (sound.incorrect = false));
+
+      this.selectedPairs = [];
+      this.selectedAnimals = [];
+      this.selectedSounds = [];
+
       this.timeLeft = 60;
-      this.matchedPairs = [];
-      this.time = 0;
+      this.timeFormatted = "00:00:00";
       this.gameFinished = false;
       this.gameStarted = false;
+
       this.shuffleAnimals();
       this.shuffleSounds();
     },
@@ -206,20 +262,23 @@ export default {
         return;
       }
 
-      const testId = 11; // ID одиннадцатого теста
-      const scorePercentage = this.accuracy; // Точность в процентах
+      const testId = 11;
 
       try {
-        const response = await fetch("http://127.0.0.1:8000/api/result/", {
+        const response = await fetch("https://svetasy.pythonanywhere.com/api/result/", {
           method: "POST",
           headers: {
             "Content-Type": "application/json",
             Authorization: `Bearer ${localStorage.getItem("token")}`,
           },
           body: JSON.stringify({
-            test: testId, // Используем ID теста
-            user: this.authStore.user.id, // ID пользователя
-            score_percentage: parseFloat(scorePercentage), // Преобразуем в число
+            test: testId,
+            user: this.authStore.user.id,
+            score_percentage: this.accuracy,
+            time: this.timeFormatted,
+            number_all_answers: this.number_all_answers,
+            number_correct_answers: this.number_correct_answers,
+            accuracy: this.accuracy,
           }),
         });
 
@@ -274,12 +333,13 @@ export default {
 }
 
 .sound-cards {
-  width: 100%; /* Занять полную ширину */
+  width: 100%;
 }
+
 .sound-container {
   display: grid;
-  grid-template-columns: repeat(2, 1fr); /* Два столбца */
-  gap: 10px; /* Промежуток между карточками звуков */
+  grid-template-columns: repeat(2, 1fr);
+  gap: 10px;
 }
 
 .sound-card {
@@ -289,6 +349,26 @@ export default {
   padding: 5px;
   margin: 5px;
   background-color: #f9f9f9;
-  height: 80px; /* Установите небольшую высоту для блоков со звуками */
+  height: 80px;
+}
+
+.selected-animal {
+  border: 3px solid blue;
+  box-shadow: 0 0 10px blue;
+}
+
+.selected-sound {
+  border: 3px solid blue;
+  box-shadow: 0 0 10px blue;
+}
+
+.matched {
+  border: 3px solid green;
+  box-shadow: 0 0 10px green;
+}
+
+.incorrect {
+  border: 3px solid red;
+  box-shadow: 0 0 10px red;
 }
 </style>

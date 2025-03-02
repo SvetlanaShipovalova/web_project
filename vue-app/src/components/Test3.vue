@@ -23,12 +23,12 @@
 
       <div v-else-if="currentView === 'result'">
         <h1>Результаты теста</h1>
-        <p>Правильных ответов: {{ score }} из {{ questions.length }}</p>
+        <p>Правильных ответов: {{ number_all_answers }} из {{ number_correct_answers }}</p>
         <p>Ошибок: {{ missClicks }}
           <span v-if="missClicks > 0"> (Вопросы: {{ errorQuestions.join(', ') }})</span>
         </p>
         <p>Общее время: {{ formatTime(totalTime) }}</p>
-        <p>Точность: {{ accuracy }}%</p> <!-- Добавляем точность -->
+        <p>Точность: {{ accuracy }}%</p>
         <p>Самый сложный вопрос: Вопрос №{{ hardestQuestionIndex + 1 }} (время: {{ hardestQuestionTime.toFixed(3) }} сек)</p>
         <button @click="restartTest" id="text">Пройти заново</button>
         <button @click="goBack" id="text">Вернуться назад</button>
@@ -40,19 +40,18 @@
 
 <script>
 import Navbar from "../view/Navbar.vue";
-import { useAuthStore } from '../store/authStore'; // Импортируем хранилище
+import { useAuthStore } from '../store/authStore'; 
 
 export default {
   components: { Navbar },
   setup() {
-    const authStore = useAuthStore(); // Используем хранилище
+    const authStore = useAuthStore(); 
     return { authStore };
   },
   data() {
     return {
       currentView: 'start',
       currentQuestionIndex: 0,
-      score: 0,
       missClicks: 0,
       timer: 0,
       totalTime: 0,
@@ -61,6 +60,8 @@ export default {
       questionStartTime: 0,
       questionStartGlobalTime: 0,
       errorQuestions: [],
+      number_correct_answers: 0, 
+      number_all_answers: 0, 
       questions: [
         {
           text: 'Найдите лишнее:',
@@ -120,16 +121,13 @@ export default {
       return this.questions[this.currentQuestionIndex];
     },
     accuracy() {
-      const totalQuestions = this.questions.length;
-      const correctAnswers = this.score;
-      return ((correctAnswers / totalQuestions) * 100).toFixed(2); // Точность (правильные ответы / общее количество вопросов)
+      return ((this.number_all_answers / this.number_correct_answers) * 100).toFixed(2);
     }
   },
   methods: {
     startTest() {
       this.currentView = 'test';
       this.currentQuestionIndex = 0;
-      this.score = 0;
       this.missClicks = 0;
       this.timer = 0;
       this.totalTime = 0;
@@ -138,6 +136,8 @@ export default {
       this.errorQuestions = [];
       this.questionStartGlobalTime = performance.now();
       this.questionStartTime = performance.now();
+      this.number_correct_answers = this.questions.length;
+      this.number_all_answers = 0; 
       this.startTimer();
     },
     startTimer() {
@@ -153,7 +153,7 @@ export default {
       const questionTime = (performance.now() - this.questionStartTime) / 1000;
 
       if (selectedOption === this.currentQuestion.correct) {
-        this.score++;
+        this.number_all_answers++; 
       } else {
         this.missClicks++;
         this.errorQuestions.push(this.currentQuestionIndex + 1);
@@ -175,15 +175,15 @@ export default {
       this.stopTimer();
       this.totalTime = performance.now() - this.questionStartGlobalTime;
       this.currentView = 'result';
-      this.saveResults(); // Сохраняем результаты после завершения теста
+      this.saveResults(); 
     },
     formatTime(timeInMilliseconds) {
       const totalSeconds = Math.floor(timeInMilliseconds / 1000);
-      const minutes = Math.floor(totalSeconds / 60);
+      const hours = Math.floor(totalSeconds / 3600);
+      const minutes = Math.floor((totalSeconds % 3600) / 60);
       const seconds = totalSeconds % 60;
-      const milliseconds = Math.floor(timeInMilliseconds % 1000);
 
-      return `${String(minutes).padStart(2, '0')}:${String(seconds).padStart(2, '0')}.${String(milliseconds).padStart(3, '0')}`;
+      return `${String(hours).padStart(2, '0')}:${String(minutes).padStart(2, '0')}.${String(seconds).padStart(2, '0')}`;
     },
     restartTest() {
       this.startTest();
@@ -197,20 +197,24 @@ export default {
         return;
       }
 
-      const testId = 3; // ID третьего теста
-      const scorePercentage = this.accuracy; // Точность в процентах
+      const testId = 3; 
+      const scorePercentage = this.accuracy; 
 
       try {
-        const response = await fetch("http://127.0.0.1:8000/api/result/", {
+        const response = await fetch("https://svetasy.pythonanywhere.com/api/result/", {
           method: "POST",
           headers: {
             "Content-Type": "application/json",
             Authorization: `Bearer ${localStorage.getItem("token")}`,
           },
           body: JSON.stringify({
-            test: testId, // Используем ID теста
-            user: this.authStore.user.id, // ID пользователя
-            score_percentage: parseFloat(scorePercentage), // Преобразуем в число
+            test: testId, 
+            user: this.authStore.user.id,
+            score_percentage: parseFloat(scorePercentage), 
+            time: this.formatTime(this.totalTime),
+            number_all_answers: this.number_all_answers,
+            number_correct_answers: this.number_correct_answers, 
+            accuracy: parseFloat(scorePercentage), 
           }),
         });
 
@@ -227,3 +231,36 @@ export default {
   },
 };
 </script>
+
+<style scoped>
+#app {
+  font-family: Avenir, Helvetica, Arial, sans-serif;
+  text-align: center;
+  color: #2c3e50;
+  margin-top: 60px;
+}
+
+.horizontal-options {
+  display: flex;
+  justify-content: center;
+  gap: 10px;
+  margin: 20px 0;
+}
+
+.horizontal-options button {
+  padding: 10px 20px;
+  font-size: 16px;
+  cursor: pointer;
+}
+
+.controls {
+  margin-top: 20px;
+}
+
+button {
+  margin: 5px;
+  padding: 10px 20px;
+  font-size: 16px;
+  cursor: pointer;
+}
+</style>

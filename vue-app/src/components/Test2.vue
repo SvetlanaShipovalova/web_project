@@ -27,6 +27,9 @@
         <h1>Результаты</h1>
         <p>Раунд {{ round }} завершён!</p>
         <p>Точность: {{ accuracy }}%</p>
+        <p>Время: {{ time }}</p>
+        <p>Вопросов: {{ number_correct_answers }}</p>
+        <p>Верных ответов: {{ number_all_answers }}</p>
         <button @click="restartTest">Повторить</button>
         <button @click="goBack">Назад</button>
       </div>
@@ -38,12 +41,13 @@
 <script>
 import Navbar from "../view/Navbar.vue";
 import { useAuthStore } from '../store/authStore';
+
 export default {
   components: {
     Navbar,
   },
   setup() {
-    const authStore = useAuthStore(); // Используем хранилище
+    const authStore = useAuthStore();
     return { authStore };
   },
   data() {
@@ -56,9 +60,25 @@ export default {
       accuracy: 0,
       results: [],
       userInput: "",
+      time: "00:00:00",
+      number_correct_answers: 7,
+      number_all_answers: 7, 
     };
   },
+  computed: {
+    accuracy() {
+      return this.number_correct_answers > 0
+        ? ((this.number_all_answers / this.number_correct_answers) * 100).toFixed(2)
+        : 0;
+    },
+  },
   methods: {
+    formatTime(seconds) {
+      const hours = Math.floor(seconds / 3600);
+      const minutes = Math.floor((seconds % 3600) / 60);
+      const secs = seconds % 60;
+      return `${String(hours).padStart(2, '0')}:${String(minutes).padStart(2, '0')}:${String(secs).padStart(2, '0')}`;
+    },
     startTest() {
       this.currentView = 'test';
       this.startRound();
@@ -73,6 +93,7 @@ export default {
       this.showDigit = true;
       this.userInput = "";
       this.remainingTime = 3;
+      this.time = "00:00:00";
 
       let countdown = setInterval(() => {
         this.remainingTime--;
@@ -90,38 +111,46 @@ export default {
       if (this.round > 4) {
         if (this.userInput.length === 2) {
           if (parseInt(this.userInput) === this.currentDigit) {
-            this.accuracy = 100;
+            // Правильный ответ
           } else {
-            this.accuracy = 0;
+            this.number_all_answers -= 1;
           }
           this.endRound();
         }
       } else {
         if (parseInt(this.userInput) === this.currentDigit) {
-          this.accuracy = 100;
-          this.endRound();
+          // Правильный ответ
+        } else {
+          this.number_all_answers -= 1; 
         }
+        this.endRound();
       }
     },
     endRound() {
+      const timeSpent = 5 - this.remainingTime;
+      this.time = this.formatTime(timeSpent);
+
       this.results.push(this.accuracy);
+
       if (this.round < 7) {
         this.round++;
         this.startRound();
       } else {
         this.currentView = 'result';
-        this.saveResults(); // Сохраняем результаты после завершения теста
+        this.saveResults();
       }
     },
     restartTest() {
       this.round = 1;
       this.results = [];
-      this.accuracy = 0;
+      this.number_all_answers = 7;
       this.userInput = "";
       this.currentView = 'start';
     },
     goBack() {
       this.currentView = 'start';
+      this.round = 1;
+      this.number_all_answers = 7;
     },
     async saveResults() {
       if (!this.authStore.user) {
@@ -129,20 +158,24 @@ export default {
         return;
       }
 
-      const testId = 2; // ID второго теста
-      const scorePercentage = this.calculateAverageAccuracy(); // Средняя точность
+      const testId = 2;
+      const scorePercentage = this.accuracy;
 
       try {
-        const response = await fetch("http://127.0.0.1:8000/api/result/", {
+        const response = await fetch("https://svetasy.pythonanywhere.com/api/result/", {
           method: "POST",
           headers: {
             "Content-Type": "application/json",
             Authorization: `Bearer ${localStorage.getItem("token")}`,
           },
           body: JSON.stringify({
-            test: testId, // Используем ID теста
-            user: this.authStore.user.id, // ID пользователя
-            score_percentage: parseFloat(scorePercentage), // Преобразуем в число
+            test: testId,
+            user: this.authStore.user.id,
+            score_percentage: parseFloat(scorePercentage),
+            time: this.time,
+            number_all_answers: this.number_all_answers,
+            number_correct_answers: this.number_correct_answers,
+            accuracy: parseFloat(scorePercentage),
           }),
         });
 
@@ -155,11 +188,6 @@ export default {
       } catch (error) {
         console.error("Ошибка при отправке результатов:", error);
       }
-    },
-    calculateAverageAccuracy() {
-      if (this.results.length === 0) return 0;
-      const sum = this.results.reduce((acc, curr) => acc + curr, 0);
-      return (sum / this.results.length).toFixed(2);
     },
   }
 };

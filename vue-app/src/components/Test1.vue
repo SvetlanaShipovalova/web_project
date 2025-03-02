@@ -25,7 +25,6 @@
           </button>
         </div>
         <div class="controls">
-          <button @click="endTest" id="text">Завершить</button>
           <button @click="restartTest" id="text">Начать заново</button>
         </div>
       </div>
@@ -33,11 +32,14 @@
       <div v-else-if="currentView === 'result'">
         <h1>Результаты</h1>
         <p v-for="(time, index) in results" :key="index">
-          Раунд {{ index + 1 }}: {{ time }} сек
+          Раунд {{ index + 1 }}: {{ formatTime(time) }} сек
         </p>
         <h2>Итог:</h2>
         <p>Ошибок: {{ totalMissClicks }}</p>
         <p>Точность: {{ accuracy }}%</p>
+        <p>Время: {{ time }}</p>
+        <p>Вопросов: {{ number_correct_answers }}</p>
+        <p>Верных ответов: {{ number_all_answers }}</p>
         <button @click="restartTest" id="text">Повторить попытку</button>
         <button @click="goBack" id="text">Вернуться назад</button>
       </div>
@@ -72,7 +74,9 @@ export default {
       missClicks: 0,
       totalMissClicks: 0,
       gridDimensions: { rows: 4, cols: 3 },
-      time: "0.00"
+      time: "00:00:00",
+      number_correct_answers: 48, // Общее количество вопросов
+      number_all_answers: 48, // Количество правильных ответов
     };
   },
   computed: {
@@ -84,6 +88,17 @@ export default {
     },
   },
   methods: {
+    addTime(secondsToAdd) {
+      const [hours, minutes, secs] = this.time.split(":").map(Number);
+      let totalSeconds = hours * 3600 + minutes * 60 + secs;
+      totalSeconds += secondsToAdd;
+
+      const newHours = Math.floor(totalSeconds / 3600);
+      const newMinutes = Math.floor((totalSeconds % 3600) / 60);
+      const newSecs = totalSeconds % 60;
+
+      this.time = `${String(newHours).padStart(2, '0')}:${String(newMinutes).padStart(2, '0')}:${String(newSecs).padStart(2, '0')}`;
+    },
     startTest() {
       this.resetRound();
       this.currentView = "test";
@@ -129,9 +144,8 @@ export default {
     finishRound() {
       this.stopTimer();
       const timeSpent = 60 - this.remainingTime;
-      this.results.push(timeSpent);
       this.totalMissClicks += this.missClicks;
-      this.time = timeSpent.toFixed(2);
+      this.addTime(timeSpent);
       if (this.round < 3) {
         this.round += 1;
         this.resetRound();
@@ -165,19 +179,15 @@ export default {
     },
     restartTest() {
       this.round = 1;
-      this.results = [];
       this.totalMissClicks = 0;
+      this.time = "00:00:00";
       this.startTest();
     },
     goBack() {
       this.currentView = "start";
       this.round = 1;
-      this.results = [];
       this.totalMissClicks = 0;
-    },
-    endTest() {
-      this.stopTimer();
-      this.currentView = "result";
+      this.time = "00:00:00";
     },
     async saveResults() {
       if (!this.authStore.user) {
@@ -185,20 +195,24 @@ export default {
         return;
       }
 
-      const testId = 1; // ID теста, с которым связаны результаты
-      const scorePercentage = this.accuracy; // Процент правильных ответов
+      const testId = 1;
+      const scorePercentage = this.accuracy;
 
       try {
-        const response = await fetch("http://127.0.0.1:8000/api/result/", {
+        const response = await fetch("https://svetasy.pythonanywhere.com/api/result/", {
           method: "POST",
           headers: {
             "Content-Type": "application/json",
             Authorization: `Bearer ${localStorage.getItem("token")}`,
           },
           body: JSON.stringify({
-            test: testId, // Используем ID теста
-            user: this.authStore.user.id, // ID пользователя
-            score_percentage: parseFloat(scorePercentage), // Преобразуем в число
+            test: testId,
+            user: this.authStore.user.id,
+            score_percentage: parseFloat(scorePercentage),
+            time: this.time,
+            number_all_answers: this.number_all_answers - this.totalMissClicks,
+            number_correct_answers: this.number_correct_answers,
+            accuracy: parseFloat(scorePercentage),
           }),
         });
 
