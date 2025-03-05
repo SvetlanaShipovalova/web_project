@@ -58,6 +58,7 @@ export default {
       currentDigit: null,
       showDigit: false,
       userInput: "",
+<<<<<<< HEAD
       totalTime: 0,
       number_all_answers: 7,    // Всего раундов/вопросов
       number_correct_answers: 0 // Счётчик правильных ответов
@@ -66,6 +67,18 @@ export default {
   computed: {
     time() {
       return this.formatTime(this.totalTime);
+=======
+      time: "00:00:00",
+      number_all_answers: 7,
+      number_correct_answers: 7, 
+    };
+  },
+  computed: {
+    accuracy() {
+      return this.number_all_answers > 0
+        ? ((this.number_correct_answers / this.number_all_answers) * 100).toFixed(2)
+        : 0;
+>>>>>>> 7c543384f7bc6244d8de4e41e2421fbc09c82652
     },
     accuracy() {
       if (this.number_all_answers === 0) return 0;
@@ -111,12 +124,29 @@ export default {
 
       this.userInput += number.toString();
 
+<<<<<<< HEAD
       // Проверка завершённости ввода
       const requiredLength = this.round > 4 ? 2 : 1;
       if (this.userInput.length === requiredLength) {
         const userAnswer = parseInt(this.userInput);
         if (userAnswer === this.currentDigit) {
           this.number_correct_answers += 1;
+=======
+      if (this.round > 4) {
+        if (this.userInput.length === 2) {
+          if (parseInt(this.userInput) === this.currentDigit) {
+            // Правильный ответ
+          } else {
+            this.number_correct_answers -= 1;
+          }
+          this.endRound();
+        }
+      } else {
+        if (parseInt(this.userInput) === this.currentDigit) {
+          // Правильный ответ
+        } else {
+          this.number_correct_answers -= 1; 
+>>>>>>> 7c543384f7bc6244d8de4e41e2421fbc09c82652
         }
         this.endRound();
       }
@@ -137,13 +167,25 @@ export default {
 
     restartTest() {
       this.round = 1;
+<<<<<<< HEAD
       this.number_correct_answers = 0;
       this.totalTime = 0;
+=======
+      this.results = [];
+      this.number_correct_answers = 7;
+      this.userInput = "";
+>>>>>>> 7c543384f7bc6244d8de4e41e2421fbc09c82652
       this.currentView = 'start';
     },
 
     goBack() {
+<<<<<<< HEAD
       this.$router.push('/tests');
+=======
+      this.currentView = 'start';
+      this.round = 1;
+      this.number_correct_answers = 7;
+>>>>>>> 7c543384f7bc6244d8de4e41e2421fbc09c82652
     },
 
     async saveResults() {
@@ -170,7 +212,19 @@ export default {
             "Content-Type": "application/json",
             Authorization: `Bearer ${localStorage.getItem("token")}`,
           },
+<<<<<<< HEAD
           body: JSON.stringify(payload)
+=======
+          body: JSON.stringify({
+            test: testId,
+            user: this.authStore.user.id,
+            score_percentage: parseFloat(scorePercentage),
+            time: this.time,
+            number_correct_answers: this.number_correct_answers,
+            number_all_answers: this.number_all_answers,
+            accuracy: parseFloat(scorePercentage),
+          }),
+>>>>>>> 7c543384f7bc6244d8de4e41e2421fbc09c82652
         });
 
         const responseData = await response.json();

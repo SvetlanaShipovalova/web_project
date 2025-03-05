@@ -121,9 +121,13 @@ export default {
       return this.questions[this.currentQuestionIndex];
     },
     accuracy() {
+<<<<<<< HEAD
       if (this.number_all_answers === 0) return 0;
       const calculated = (this.number_correct_answers / this.number_all_answers) * 100;
       return calculated.toFixed(2);
+=======
+      return ((this.number_correct_answers / this.number_all_answers) * 100).toFixed(2);
+>>>>>>> 7c543384f7bc6244d8de4e41e2421fbc09c82652
     }
   },
   methods: {
@@ -139,7 +143,11 @@ export default {
       this.questionStartGlobalTime = performance.now();
       this.questionStartTime = performance.now();
       this.number_all_answers = this.questions.length;
+<<<<<<< HEAD
       this.number_correct_answers = 0;
+=======
+      this.number_correct_answers = 0; 
+>>>>>>> 7c543384f7bc6244d8de4e41e2421fbc09c82652
       this.startTimer();
     },
 
@@ -158,7 +166,11 @@ export default {
       const questionTime = (performance.now() - this.questionStartTime) / 1000;
 
       if (selectedOption === this.currentQuestion.correct) {
+<<<<<<< HEAD
         this.number_correct_answers++;
+=======
+        this.number_correct_answers++; 
+>>>>>>> 7c543384f7bc6244d8de4e41e2421fbc09c82652
       } else {
         this.missClicks++;
         this.errorQuestions.push(this.currentQuestionIndex + 1);
@@ -222,8 +234,13 @@ export default {
             score_percentage: parseInt(scorePercentage, 10),
             time: this.formatTime(this.totalTime),
             number_correct_answers: this.number_correct_answers,
+<<<<<<< HEAD
             number_all_answers: this.number_all_answers,
             accuracy: parseInt(scorePercentage, 10),
+=======
+            number_all_answers: this.number_all_answers, 
+            accuracy: parseFloat(scorePercentage), 
+>>>>>>> 7c543384f7bc6244d8de4e41e2421fbc09c82652
           }),
         });
 

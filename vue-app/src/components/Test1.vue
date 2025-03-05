@@ -214,7 +214,11 @@ export default {
             time: this.time,
             number_correct_answers: this.number_correct_answers,
             number_all_answers: this.number_all_answers,
+<<<<<<< HEAD
             accuracy: parseInt(scorePercentage, 10), // Исправлено на целое число
+=======
+            accuracy: parseFloat(scorePercentage),
+>>>>>>> 7c543384f7bc6244d8de4e41e2421fbc09c82652
           }),
         });
 

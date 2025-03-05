@@ -143,6 +143,10 @@ export default {
       shuffledSounds: [],
       number_correct_answers: 0,
       number_all_answers: 10,
+<<<<<<< HEAD
+=======
+      accuracy: 0,
+>>>>>>> 7c543384f7bc6244d8de4e41e2421fbc09c82652
     };
   },
   computed: {
@@ -151,8 +155,12 @@ export default {
         pair => pair.animal.name === pair.sound.name
       ).length;
       this.number_correct_answers = correctPairs;
+<<<<<<< HEAD
       const calculated = (correctPairs / this.number_all_answers) * 100;
       return Number(calculated.toFixed(2));
+=======
+      return ((correctPairs / this.animals.length) * 100).toFixed(2) || 0;
+>>>>>>> 7c543384f7bc6244d8de4e41e2421fbc09c82652
     },
   },
   methods: {
@@ -287,7 +295,19 @@ export default {
             "Content-Type": "application/json",
             Authorization: `Bearer ${localStorage.getItem("token")}`,
           },
+<<<<<<< HEAD
           body: JSON.stringify(payload),
+=======
+          body: JSON.stringify({
+            test: testId,
+            user: this.authStore.user.id,
+            score_percentage: this.accuracy,
+            time: this.timeFormatted,
+            number_correct_answers: this.number_correct_answers,
+            number_all_answers: this.number_all_answers,
+            accuracy: this.accuracy,
+          }),
+>>>>>>> 7c543384f7bc6244d8de4e41e2421fbc09c82652
         });
 
         const data = await response.json();
