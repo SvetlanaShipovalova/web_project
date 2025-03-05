@@ -197,7 +197,7 @@ export default {
       }
 
       const testId = 13;
-      const scorePercentage = parseFloat(this.accuracy);
+      const scorePercentage = this.accuracy;
 
       try {
         await fetch("http://127.0.0.1:8000/api/result/", {
@@ -209,8 +209,8 @@ export default {
           body: JSON.stringify({
             test: testId,
             user: this.authStore.user.id,
-            score_percentage: scorePercentage,
-            time_spent: this.time,
+            score_percentage: Math.round(scorePercentage),
+            time: this.time,
             number_all_answers: this.number_all_answers,
             number_correct_answers: this.number_correct_answers
           }),

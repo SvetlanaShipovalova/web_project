@@ -38,8 +38,8 @@
         <p>Ошибок: {{ totalMissClicks }}</p>
         <p>Точность: {{ accuracy }}%</p>
         <p>Время: {{ time }}</p>
-        <p>Вопросов: {{ number_correct_answers }}</p>
-        <p>Верных ответов: {{ number_all_answers }}</p>
+        <p>Вопросов: {{ number_all_answers }}</p>
+        <p>Верных ответов: {{ number_correct_answers }}</p>
         <button @click="restartTest" id="text">Повторить попытку</button>
         <button @click="goBack" id="text">Вернуться назад</button>
       </div>
@@ -75,8 +75,7 @@ export default {
       totalMissClicks: 0,
       gridDimensions: { rows: 4, cols: 3 },
       time: "00:00:00",
-      number_correct_answers: 48, // Общее количество вопросов
-      number_all_answers: 48, // Количество правильных ответов
+      number_all_answers: 48, // Общее количество вопросов
     };
   },
   computed: {
@@ -85,6 +84,9 @@ export default {
       return totalClicks > 0
         ? (((totalClicks - this.totalMissClicks) / totalClicks) * 100).toFixed(2)
         : 0;
+    },
+    number_correct_answers() {
+      return this.number_all_answers - this.totalMissClicks; // Вычисляем количество правильных ответов
     },
   },
   methods: {
@@ -208,11 +210,11 @@ export default {
           body: JSON.stringify({
             test: testId,
             user: this.authStore.user.id,
-            score_percentage: parseFloat(scorePercentage),
+            score_percentage: parseInt(scorePercentage, 10), // Исправлено на целое число
             time: this.time,
-            number_all_answers: this.number_all_answers - this.totalMissClicks,
             number_correct_answers: this.number_correct_answers,
-            accuracy: parseFloat(scorePercentage),
+            number_all_answers: this.number_all_answers,
+            accuracy: parseInt(scorePercentage, 10), // Исправлено на целое число
           }),
         });
 

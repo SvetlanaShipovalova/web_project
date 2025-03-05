@@ -65,7 +65,7 @@
         <h2>Игра окончена!</h2>
         <p>Вы набрали: {{ accuracy }}%!</p>
         <p>Время выполнения: {{ timeFormatted }}</p>
-        <p>Правильных ответов: {{ number_all_answers }} из {{ number_correct_answers }}</p>
+        <p>Правильных ответов: {{ number_correct_answers }} из {{ number_all_answers }}</p>
         <button @click="restartGame">Начать заново</button>
       </div>
     </div>
@@ -141,18 +141,18 @@ export default {
       timer: null,
       shuffledAnimals: [],
       shuffledSounds: [],
-      number_all_answers: 0,
-      number_correct_answers: 10,
-      accuracy: 0,
+      number_correct_answers: 0,
+      number_all_answers: 10,
     };
   },
   computed: {
-    computedAccuracy() {
+    accuracy() {
       const correctPairs = this.selectedPairs.filter(
         pair => pair.animal.name === pair.sound.name
       ).length;
-      this.number_all_answers = correctPairs;
-      return ((correctPairs / this.animals.length) * 100).toFixed(2) || 0;
+      this.number_correct_answers = correctPairs;
+      const calculated = (correctPairs / this.number_all_answers) * 100;
+      return Number(calculated.toFixed(2));
     },
   },
   methods: {
@@ -231,7 +231,6 @@ export default {
       this.gameFinished = true;
       clearInterval(this.timer);
       console.log("Игра завершена!");
-      this.accuracy = parseFloat(this.computedAccuracy);
       this.saveResults();
     },
     restartGame() {
@@ -263,6 +262,23 @@ export default {
       }
 
       const testId = 11;
+      const payload = {
+        test: testId,
+        user: this.authStore.user.id,
+        score_percentage: Math.round(this.accuracy),
+        time: this.timeFormatted,
+        number_all_answers: this.number_all_answers,
+        number_correct_answers: this.number_correct_answers,
+        accuracy: Math.round(this.accuracy)
+      };
+
+      // Проверка числовых значений
+      if (isNaN(payload.score_percentage) || isNaN(payload.accuracy)) {
+        console.error("Некорректные значения:", payload);
+        return;
+      }
+
+      console.log("Отправляемые данные:", payload);
 
       try {
         const response = await fetch("http://127.0.0.1:8000/api/result/", {
@@ -271,25 +287,19 @@ export default {
             "Content-Type": "application/json",
             Authorization: `Bearer ${localStorage.getItem("token")}`,
           },
-          body: JSON.stringify({
-            test: testId,
-            user: this.authStore.user.id,
-            score_percentage: this.accuracy,
-            time: this.timeFormatted,
-            number_all_answers: this.number_all_answers,
-            number_correct_answers: this.number_correct_answers,
-            accuracy: this.accuracy,
-          }),
+          body: JSON.stringify(payload),
         });
 
-        if (response.ok) {
-          alert("Результаты успешно сохранены!");
-        } else {
-          const errorData = await response.json();
-          alert(errorData.error || "Ошибка при сохранении результатов");
+        const data = await response.json();
+
+        if (!response.ok) {
+          throw new Error(data.detail || data.error || JSON.stringify(data));
         }
+
+        alert("Результаты успешно сохранены!");
       } catch (error) {
-        console.error("Ошибка при отправке результатов:", error);
+        console.error("Ошибка сохранения:", error);
+        alert(`Ошибка: ${error.message}`);
       }
     },
   },

@@ -23,7 +23,7 @@
 
       <div v-else-if="currentView === 'result'">
         <h1>Результаты теста</h1>
-        <p>Правильных ответов: {{ number_all_answers }} из {{ number_correct_answers }}</p>
+        <p>Правильных ответов: {{ number_correct_answers }} из {{ number_all_answers }}</p>
         <p>Ошибок: {{ missClicks }}
           <span v-if="missClicks > 0"> (Вопросы: {{ errorQuestions.join(', ') }})</span>
         </p>
@@ -60,8 +60,8 @@ export default {
       questionStartTime: 0,
       questionStartGlobalTime: 0,
       errorQuestions: [],
-      number_correct_answers: 0, 
       number_all_answers: 0, 
+      number_correct_answers: 0, 
       questions: [
         {
           text: 'Найдите лишнее:',
@@ -121,7 +121,9 @@ export default {
       return this.questions[this.currentQuestionIndex];
     },
     accuracy() {
-      return ((this.number_all_answers / this.number_correct_answers) * 100).toFixed(2);
+      if (this.number_all_answers === 0) return 0;
+      const calculated = (this.number_correct_answers / this.number_all_answers) * 100;
+      return calculated.toFixed(2);
     }
   },
   methods: {
@@ -136,24 +138,27 @@ export default {
       this.errorQuestions = [];
       this.questionStartGlobalTime = performance.now();
       this.questionStartTime = performance.now();
-      this.number_correct_answers = this.questions.length;
-      this.number_all_answers = 0; 
+      this.number_all_answers = this.questions.length;
+      this.number_correct_answers = 0;
       this.startTimer();
     },
+
     startTimer() {
       this.timerInterval = setInterval(() => {
         this.timer = performance.now() - this.questionStartGlobalTime;
       }, 10);
     },
+
     stopTimer() {
       clearInterval(this.timerInterval);
     },
+
     checkAnswer(selectedIndex) {
       const selectedOption = this.currentQuestion.options[selectedIndex];
       const questionTime = (performance.now() - this.questionStartTime) / 1000;
 
       if (selectedOption === this.currentQuestion.correct) {
-        this.number_all_answers++; 
+        this.number_correct_answers++;
       } else {
         this.missClicks++;
         this.errorQuestions.push(this.currentQuestionIndex + 1);
@@ -171,34 +176,38 @@ export default {
         this.endTest();
       }
     },
+
     endTest() {
       this.stopTimer();
       this.totalTime = performance.now() - this.questionStartGlobalTime;
       this.currentView = 'result';
-      this.saveResults(); 
+      this.saveResults();
     },
+
     formatTime(timeInMilliseconds) {
       const totalSeconds = Math.floor(timeInMilliseconds / 1000);
       const hours = Math.floor(totalSeconds / 3600);
       const minutes = Math.floor((totalSeconds % 3600) / 60);
       const seconds = totalSeconds % 60;
-
       return `${String(hours).padStart(2, '0')}:${String(minutes).padStart(2, '0')}.${String(seconds).padStart(2, '0')}`;
     },
+
     restartTest() {
       this.startTest();
     },
+
     goBack() {
       this.currentView = 'start';
     },
+
     async saveResults() {
       if (!this.authStore.user) {
         alert("Пользователь не авторизован. Пожалуйста, войдите в систему.");
         return;
       }
 
-      const testId = 3; 
-      const scorePercentage = this.accuracy; 
+      const testId = 3;
+      const scorePercentage = parseFloat(this.accuracy);
 
       try {
         const response = await fetch("http://127.0.0.1:8000/api/result/", {
@@ -208,13 +217,13 @@ export default {
             Authorization: `Bearer ${localStorage.getItem("token")}`,
           },
           body: JSON.stringify({
-            test: testId, 
+            test: testId,
             user: this.authStore.user.id,
-            score_percentage: parseFloat(scorePercentage), 
+            score_percentage: parseInt(scorePercentage, 10),
             time: this.formatTime(this.totalTime),
+            number_correct_answers: this.number_correct_answers,
             number_all_answers: this.number_all_answers,
-            number_correct_answers: this.number_correct_answers, 
-            accuracy: parseFloat(scorePercentage), 
+            accuracy: parseInt(scorePercentage, 10),
           }),
         });
 
@@ -222,12 +231,13 @@ export default {
           alert("Результаты успешно сохранены!");
         } else {
           const errorData = await response.json();
-          alert(errorData.error || "Ошибка при сохранении результатов");
+          alert(errorData.detail || "Ошибка при сохранении результатов");
         }
       } catch (error) {
         console.error("Ошибка при отправке результатов:", error);
+        alert("Произошла ошибка при отправке данных на сервер");
       }
-    },
+    }
   },
 };
 </script>

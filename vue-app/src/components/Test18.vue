@@ -163,7 +163,7 @@ export default {
           body: JSON.stringify({
             test: 18, // ID теста
             user: this.authStore.user.id,
-            score_percentage: parseFloat(this.accuracy),
+            score_percentage: Math.round(this.accuracy),
             time: this.time, // Время выполнения
             number_all_answers: this.number_all_answers, // Всегда 10
             number_correct_answers: this.number_correct_answers, // Сколько правильно

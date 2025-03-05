@@ -54,12 +54,12 @@ export default {
     return {
       gameStarted: false,
       gameEnded: false,
-      timeLeft: 50, // 50 секунд на 50 раундов
-      timeElapsed: 0, // Общее время в секундах
-      time: "00:00:00", // Время в формате ЧЧ:ММ:СС
+      timeLeft: 50,
+      timeElapsed: 0,
+      time: "00:00:00",
       activeSquare: null,
-      number_all_answers: 50, // Всего 50 раундов
-      number_correct_answers: 0, // Количество правильных ответов
+      number_all_answers: 50,
+      number_correct_answers: 0,
       currentRound: 0,
       startTime: null,
       gameInterval: null,
@@ -72,9 +72,9 @@ export default {
       return `00:${minutes}:${seconds}`;
     },
     accuracy() {
-      return this.number_all_answers > 0
-        ? ((this.number_correct_answers / this.number_all_answers) * 100).toFixed(2)
-        : 0;
+      if (this.number_all_answers === 0) return 0;
+      const calculated = (this.number_correct_answers / this.number_all_answers) * 100;
+      return calculated.toFixed(2);
     },
   },
   methods: {
@@ -95,28 +95,32 @@ export default {
           this.currentRound++;
           this.timeLeft--;
           this.timeElapsed++;
-          this.time = this.formatTime(this.timeElapsed); // Обновляем формат времени
+          this.time = this.formatTime(this.timeElapsed);
           this.generateRandomSquare();
         } else {
           this.endGame();
         }
       }, 1000);
     },
+
     formatTime(seconds) {
       const hours = Math.floor(seconds / 3600).toString().padStart(2, "0");
       const minutes = Math.floor((seconds % 3600) / 60).toString().padStart(2, "0");
       const sec = (seconds % 60).toString().padStart(2, "0");
       return `${hours}:${minutes}:${sec}`;
     },
+
     generateRandomSquare() {
       this.activeSquare = Math.floor(Math.random() * 30) + 1;
     },
+
     handleClick(index) {
       if (index === this.activeSquare) {
-        this.number_correct_answers++; // Увеличиваем количество правильных ответов
+        this.number_correct_answers++;
         this.generateRandomSquare();
       }
     },
+
     endGame() {
       clearInterval(this.gameInterval);
       this.gameStarted = false;
@@ -124,17 +128,19 @@ export default {
       this.time = this.formatTime(this.timeElapsed);
       this.saveResults();
     },
+
     restartGame() {
       this.startGame();
     },
+
     async saveResults() {
       if (!this.authStore.user) {
         alert("Пользователь не авторизован. Пожалуйста, войдите в систему.");
         return;
       }
 
-      const testId = 5; // ID теста
-      const scorePercentage = parseFloat(this.accuracy); // Точность в процентах
+      const testId = 5;
+      const accuracyValue = parseFloat(this.accuracy);
 
       try {
         const response = await fetch("http://127.0.0.1:8000/api/result/", {
@@ -146,10 +152,11 @@ export default {
           body: JSON.stringify({
             test: testId,
             user: this.authStore.user.id,
-            score_percentage: scorePercentage,
-            time: this.time, // Время в формате "00:00:00"
+            score_percentage: parseInt(accuracyValue, 10),
+            time: this.time,
             number_all_answers: this.number_all_answers,
             number_correct_answers: this.number_correct_answers,
+            accuracy: parseInt(accuracyValue, 10),
           }),
         });
 
@@ -157,10 +164,11 @@ export default {
           alert("Результаты успешно сохранены!");
         } else {
           const errorData = await response.json();
-          alert(errorData.error || "Ошибка при сохранении результатов");
+          alert(errorData.detail || errorData.error || "Ошибка при сохранении");
         }
       } catch (error) {
         console.error("Ошибка при отправке результатов:", error);
+        alert("Ошибка соединения с сервером");
       }
     },
   },

@@ -60,10 +60,9 @@ export default {
           currentQuestion: 0,
           answered: false,
           feedback: "",
-          number_all_answers: 12, // Общее количество вопросов
-          number_correct_answers: 0, // Количество правильных ответов
-          accuracy: 0,
-          time: "00:00:00",
+          number_all_answers: 12,
+          number_correct_answers: 0,
+          time: 0, // Храним время в секундах
           startTime: null,
           questions: [
               { sequence: "1, 2, ?, 4, 5", options: [2, 3, 1, 4], answer: 3 },
@@ -83,13 +82,20 @@ export default {
   },
   computed: {
       accuracy() {
-          return this.number_all_answers > 0
-              ? ((this.number_correct_answers / this.number_all_answers) * 100).toFixed(2)
-              : "0.00";
+          if (this.number_all_answers === 0) return 0;
+          const calculated = (this.number_correct_answers / this.number_all_answers) * 100;
+          return Number(calculated.toFixed(2));
+      },
+      formattedTime() {
+          const hours = String(Math.floor(this.time / 3600)).padStart(2, '0');
+          const minutes = String(Math.floor((this.time % 3600) / 60)).padStart(2, '0');
+          const sec = String(this.time % 60).padStart(2, '0');
+          return `${hours}:${minutes}:${sec}`;
       },
       finalMessage() {
-          if (this.accuracy >= 80) return "Вы настоящий мастер!";
-          if (this.accuracy >= 50) return "Хороший результат! Немного практики — и всё получится!";
+          const accuracy = this.accuracy;
+          if (accuracy >= 80) return "Вы настоящий мастер!";
+          if (accuracy >= 50) return "Хороший результат! Немного практики — и всё получится!";
           return "Может быть, вам ближе искусство?";
       },
   },
@@ -101,8 +107,7 @@ export default {
           this.number_correct_answers = 0;
           this.answered = false;
           this.feedback = "";
-          this.accuracy = 0;
-          this.time = "00:00:00";
+          this.time = 0;
           this.startTime = Date.now();
       },
       handleAnswer(option) {
@@ -130,15 +135,10 @@ export default {
       endGame() {
           this.gameStarted = false;
           this.gameEnded = true;
-          const totalSeconds = Math.floor((Date.now() - this.startTime) / 1000);
-          this.time = this.formatTime(totalSeconds);
+          this.time = Math.floor((Date.now() - this.startTime) / 1000);
           this.saveResults();
       },
-      formatTime(seconds) {
-          const minutes = String(Math.floor(seconds / 60)).padStart(2, '0');
-          const sec = String(seconds % 60).padStart(2, '0');
-          return `00:${minutes}:${sec}`;
-      },
+
       async saveResults() {
           if (!this.authStore.user) {
               alert("Пользователь не авторизован.");
@@ -146,20 +146,40 @@ export default {
           }
 
           const testId = 8;
+          const payload = {
+              test: testId,
+              user: this.authStore.user.id,
+              score_percentage: Math.round(this.accuracy),
+              time: this.formattedTime,
+              number_all_answers: this.number_all_answers,
+              number_correct_answers: this.number_correct_answers,
+              accuracy: Math.round(this.accuracy)
+          };
+
+          console.log("Отправляемые данные:", payload);
+
           try {
-              await fetch("http://127.0.0.1:8000/api/result/", {
+              const response = await fetch("http://127.0.0.1:8000/api/result/", {
                   method: "POST",
-                  headers: { "Content-Type": "application/json", Authorization: `Bearer ${localStorage.getItem("token")}` },
-                  body: JSON.stringify({
-                      test: testId, user: this.authStore.user.id, score_percentage: parseFloat(this.accuracy),
-                      time_spent: this.time, number_all_answers: this.number_all_answers, number_correct_answers: this.number_correct_answers
-                  }),
+                  headers: {
+                      "Content-Type": "application/json",
+                      Authorization: `Bearer ${localStorage.getItem("token")}`
+                  },
+                  body: JSON.stringify(payload),
               });
-              alert("Результаты сохранены!");
+
+              const data = await response.json();
+
+              if (!response.ok) {
+                  throw new Error(data.detail || data.error || JSON.stringify(data));
+              }
+
+              alert("Результаты успешно сохранены!");
           } catch (error) {
-              console.error("Ошибка при отправке:", error);
+              console.error("Ошибка сохранения:", error);
+              alert(`Ошибка: ${error.message}`);
           }
-      },
+      }
   },
 };
 </script>

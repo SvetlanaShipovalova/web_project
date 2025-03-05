@@ -166,7 +166,7 @@ export default {
           body: JSON.stringify({
             test: testId,
             user: this.authStore.user.id,
-            score_percentage: scorePercentage,
+            score_percentage: Math.round(scorePercentage),
             time: this.time, // Время в формате "00:00:00"
             number_all_answers: this.number_all_answers, // Всего вопросов
             number_correct_answers: this.number_correct_answers, // Сколько правильно

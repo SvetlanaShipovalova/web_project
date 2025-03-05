@@ -54,11 +54,11 @@ export default {
       cards: [],
       flippedCards: [],
       matchedPairs: [],
-      number_all_answers: 8, // Всего пар в тесте
-      number_correct_answers: 0, // Сколько отгадал (найденные пары)
-      remainingTime: 60, // Таймер 60 секунд
-      timeElapsed: 0, // Время в секундах
-      time: "00:00:00", // Форматированное время
+      number_all_answers: 8,
+      number_correct_answers: 0,
+      remainingTime: 60,
+      timeElapsed: 0,
+      time: "00:00:00",
       gameTimer: null,
       startTime: null,
     };
@@ -70,8 +70,8 @@ export default {
       return `00:${minutes}:${seconds}`;
     },
     accuracy() {
-      return this.number_all_answers > 0 
-        ? ((this.number_correct_answers / this.number_all_answers) * 100).toFixed(2) 
+      return this.number_all_answers > 0
+        ? ((this.number_correct_answers / this.number_all_answers) * 100).toFixed(2)
         : 0;
     },
   },
@@ -87,14 +87,17 @@ export default {
       this.startTime = Date.now();
       this.startTimer();
     },
+
     generateCards() {
       const values = ['😊', '😂', '😍', '😎', '😜', '😢', '😱', '😈'];
       const doubledValues = [...values, ...values];
       return this.shuffle(doubledValues).map(value => ({ value, flipped: false, matched: false }));
     },
+
     shuffle(array) {
       return array.sort(() => Math.random() - 0.5);
     },
+
     startTimer() {
       this.gameTimer = setInterval(() => {
         if (this.remainingTime > 0) {
@@ -106,12 +109,14 @@ export default {
         }
       }, 1000);
     },
+
     formatTime(seconds) {
       const hours = Math.floor(seconds / 3600).toString().padStart(2, "0");
       const minutes = Math.floor((seconds % 3600) / 60).toString().padStart(2, "0");
       const sec = (seconds % 60).toString().padStart(2, "0");
       return `${hours}:${minutes}:${sec}`;
     },
+
     flipCard(card) {
       if (card.flipped || card.matched || this.flippedCards.length === 2) return;
       card.flipped = true;
@@ -120,15 +125,15 @@ export default {
         this.checkForMatch();
       }
     },
+
     checkForMatch() {
       const [firstCard, secondCard] = this.flippedCards;
       if (firstCard.value === secondCard.value) {
         firstCard.matched = true;
         secondCard.matched = true;
         this.matchedPairs.push(firstCard);
-        this.number_correct_answers++; // Увеличиваем счетчик найденных пар
+        this.number_correct_answers++;
 
-        // ✅ Если нашли все пары, завершаем игру
         if (this.number_correct_answers === this.number_all_answers) {
           this.endGame();
         }
@@ -140,26 +145,29 @@ export default {
       }
       this.flippedCards = [];
     },
+
     endGame() {
-      clearInterval(this.gameTimer); // ✅ Останавливаем таймер
-      this.time = this.formatTime(this.timeElapsed); // Фиксируем финальное время
+      clearInterval(this.gameTimer);
+      this.time = this.formatTime(this.timeElapsed);
       this.currentView = 'result';
-      this.saveResults(); // Сохраняем результаты
+      this.saveResults();
     },
+
     restartGame() {
       this.currentView = 'start';
       this.remainingTime = 60;
       this.matchedPairs = [];
       this.flippedCards = [];
     },
+
     async saveResults() {
       if (!this.authStore.user) {
         alert("Пользователь не авторизован. Пожалуйста, войдите в систему.");
         return;
       }
 
-      const testId = 4; // ID теста
-      const scorePercentage = parseFloat(this.accuracy);
+      const testId = 4;
+      const accuracyValue = parseFloat(this.accuracy);
 
       try {
         const response = await fetch("http://127.0.0.1:8000/api/result/", {
@@ -171,10 +179,11 @@ export default {
           body: JSON.stringify({
             test: testId,
             user: this.authStore.user.id,
-            score_percentage: scorePercentage,
-            time: this.time, // Время в формате "00:00:00"
+            score_percentage: parseInt(accuracyValue, 10),
+            time: this.time,
             number_all_answers: this.number_all_answers,
             number_correct_answers: this.number_correct_answers,
+            accuracy: parseInt(accuracyValue, 10),
           }),
         });
 
@@ -182,10 +191,11 @@ export default {
           alert("Результаты успешно сохранены!");
         } else {
           const errorData = await response.json();
-          alert(errorData.error || "Ошибка при сохранении результатов");
+          alert(errorData.detail || errorData.error || "Ошибка при сохранении результатов");
         }
       } catch (error) {
         console.error("Ошибка при отправке результатов:", error);
+        alert("Произошла ошибка соединения с сервером");
       }
     },
   },

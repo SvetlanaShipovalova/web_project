@@ -28,8 +28,8 @@
         <p>Раунд {{ round }} завершён!</p>
         <p>Точность: {{ accuracy }}%</p>
         <p>Время: {{ time }}</p>
-        <p>Вопросов: {{ number_correct_answers }}</p>
-        <p>Верных ответов: {{ number_all_answers }}</p>
+        <p>Вопросов: {{ number_all_answers }}</p>
+        <p>Верных ответов: {{ number_correct_answers }}</p>
         <button @click="restartTest">Повторить</button>
         <button @click="goBack">Назад</button>
       </div>
@@ -57,20 +57,21 @@ export default {
       remainingTime: 5,
       currentDigit: null,
       showDigit: false,
-      accuracy: 0,
-      results: [],
       userInput: "",
-      time: "00:00:00",
-      number_correct_answers: 7,
-      number_all_answers: 7, 
+      totalTime: 0,
+      number_all_answers: 7,    // Всего раундов/вопросов
+      number_correct_answers: 0 // Счётчик правильных ответов
     };
   },
   computed: {
-    accuracy() {
-      return this.number_correct_answers > 0
-        ? ((this.number_all_answers / this.number_correct_answers) * 100).toFixed(2)
-        : 0;
+    time() {
+      return this.formatTime(this.totalTime);
     },
+    accuracy() {
+      if (this.number_all_answers === 0) return 0;
+      const calculated = (this.number_correct_answers / this.number_all_answers) * 100;
+      return Math.round(calculated);
+    }
   },
   methods: {
     formatTime(seconds) {
@@ -79,23 +80,24 @@ export default {
       const secs = seconds % 60;
       return `${String(hours).padStart(2, '0')}:${String(minutes).padStart(2, '0')}:${String(secs).padStart(2, '0')}`;
     },
+
     startTest() {
       this.currentView = 'test';
       this.startRound();
     },
+
     startRound() {
-      if (this.round > 4) {
-        this.currentDigit = Math.floor(Math.random() * 90) + 10;
-      } else {
-        this.currentDigit = Math.floor(Math.random() * 10);
-      }
+      // Генерация числа в зависимости от раунда
+      this.currentDigit = this.round > 4
+        ? Math.floor(Math.random() * 90) + 10 // Двузначные для раундов 5-7
+        : Math.floor(Math.random() * 10);     // Однозначные для раундов 1-4
 
       this.showDigit = true;
       this.userInput = "";
       this.remainingTime = 3;
-      this.time = "00:00:00";
 
-      let countdown = setInterval(() => {
+      // Таймер показа числа
+      const countdown = setInterval(() => {
         this.remainingTime--;
         if (this.remainingTime <= 0) {
           clearInterval(countdown);
@@ -103,34 +105,26 @@ export default {
         }
       }, 1000);
     },
+
     checkAnswer(number) {
       if (this.showDigit) return;
 
-      this.userInput += number;
+      this.userInput += number.toString();
 
-      if (this.round > 4) {
-        if (this.userInput.length === 2) {
-          if (parseInt(this.userInput) === this.currentDigit) {
-            // Правильный ответ
-          } else {
-            this.number_all_answers -= 1;
-          }
-          this.endRound();
-        }
-      } else {
-        if (parseInt(this.userInput) === this.currentDigit) {
-          // Правильный ответ
-        } else {
-          this.number_all_answers -= 1; 
+      // Проверка завершённости ввода
+      const requiredLength = this.round > 4 ? 2 : 1;
+      if (this.userInput.length === requiredLength) {
+        const userAnswer = parseInt(this.userInput);
+        if (userAnswer === this.currentDigit) {
+          this.number_correct_answers += 1;
         }
         this.endRound();
       }
     },
-    endRound() {
-      const timeSpent = 5 - this.remainingTime;
-      this.time = this.formatTime(timeSpent);
 
-      this.results.push(this.accuracy);
+    endRound() {
+      // Добавляем время раунда к общему времени
+      this.totalTime += (3 - this.remainingTime);
 
       if (this.round < 7) {
         this.round++;
@@ -140,55 +134,58 @@ export default {
         this.saveResults();
       }
     },
+
     restartTest() {
       this.round = 1;
-      this.results = [];
-      this.number_all_answers = 7;
-      this.userInput = "";
+      this.number_correct_answers = 0;
+      this.totalTime = 0;
       this.currentView = 'start';
     },
+
     goBack() {
-      this.currentView = 'start';
-      this.round = 1;
-      this.number_all_answers = 7;
+      this.$router.push('/tests');
     },
+
     async saveResults() {
       if (!this.authStore.user) {
-        alert("Пользователь не авторизован. Пожалуйста, войдите в систему.");
+        alert("Для сохранения результатов необходимо авторизоваться");
         return;
       }
 
-      const testId = 2;
-      const scorePercentage = this.accuracy;
-
       try {
-        const response = await fetch("http://127.0.0.1:8000/api/result/", {
+        const payload = {
+          test: 2,
+          user: this.authStore.user.id,
+          score_percentage: this.accuracy,
+          time: this.time,
+          number_all_answers: this.number_all_answers,
+          number_correct_answers: this.number_correct_answers
+        };
+
+        console.log('Saving results:', payload);
+
+        const response = await fetch("/api/result/", {
           method: "POST",
           headers: {
             "Content-Type": "application/json",
             Authorization: `Bearer ${localStorage.getItem("token")}`,
           },
-          body: JSON.stringify({
-            test: testId,
-            user: this.authStore.user.id,
-            score_percentage: parseFloat(scorePercentage),
-            time: this.time,
-            number_all_answers: this.number_all_answers,
-            number_correct_answers: this.number_correct_answers,
-            accuracy: parseFloat(scorePercentage),
-          }),
+          body: JSON.stringify(payload)
         });
 
-        if (response.ok) {
-          alert("Результаты успешно сохранены!");
-        } else {
-          const errorData = await response.json();
-          alert(errorData.error || "Ошибка при сохранении результатов");
+        const responseData = await response.json();
+        console.log('Server response:', responseData);
+
+        if (!response.ok) {
+          throw new Error(responseData.error || 'Unknown server error');
         }
+
+        alert("Результаты успешно сохранены!");
       } catch (error) {
-        console.error("Ошибка при отправке результатов:", error);
+        console.error("Save error:", error);
+        alert(`Ошибка сохранения: ${error.message}`);
       }
-    },
+    }
   }
 };
 </script>

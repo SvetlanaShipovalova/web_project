@@ -60,18 +60,27 @@ export default {
       tiles: [],
       moves: 0,
       timeElapsed: 0,
-      time: "00:00:00",
-      accuracy: 100,
       timer: null,
       gameStarted: false,
       gameEnded: false,
       endMessage: '',
-      number_all_answers: 15, // Всего плиток
-      number_correct_answers: 0, // Количество правильно расположенных плиток
+      number_all_answers: 15,
+      number_correct_answers: 0,
       startTime: null,
     };
   },
   computed: {
+    accuracy() {
+      if (this.number_all_answers === 0) return 0;
+      const calculated = (this.number_correct_answers / this.number_all_answers) * 100;
+      return Number(calculated.toFixed(2));
+    },
+    time() {
+      const hours = String(Math.floor(this.timeElapsed / 3600)).padStart(2, '0');
+      const minutes = String(Math.floor((this.timeElapsed % 3600) / 60)).padStart(2, '0');
+      const seconds = String(this.timeElapsed % 60).padStart(2, '0');
+      return `${hours}:${minutes}:${seconds}`;
+    },
     motivationalMessage() {
       if (this.accuracy >= 95) return 'Феноменальный результат! Вы прирождённый стратег!';
       if (this.accuracy >= 85) return 'Отличная работа! Вы проявили аналитическое мышление.';
@@ -90,17 +99,10 @@ export default {
       this.gameEnded = false;
       this.number_correct_answers = 0;
       this.startTime = Date.now();
-      this.time = "00:00:00"; 
 
       this.timer = setInterval(() => {
-        this.timeElapsed++;
-        this.updateTimeFormat();
+        this.timeElapsed = Math.floor((Date.now() - this.startTime) / 1000);
       }, 1000);
-    },
-    updateTimeFormat() {
-      const minutes = String(Math.floor(this.timeElapsed / 60)).padStart(2, '0');
-      const seconds = String(this.timeElapsed % 60).padStart(2, '0');
-      this.time = `00:${minutes}:${seconds}`;
     },
     initializeTiles() {
       const tiles = [...Array(15).keys()].map(i => (i + 1).toString());
@@ -122,7 +124,6 @@ export default {
         [this.tiles[emptyIndex], this.tiles[index]] = [this.tiles[index], this.tiles[emptyIndex]];
         this.moves++;
         this.number_correct_answers = this.calculateCorrectTiles();
-        this.accuracy = ((this.number_correct_answers / this.number_all_answers) * 100).toFixed(2);
       }
     },
     testVictory() {
@@ -138,9 +139,6 @@ export default {
       this.gameEnded = true;
       this.endMessage = message;
       this.number_correct_answers = this.calculateCorrectTiles();
-      this.accuracy = ((this.number_correct_answers / this.number_all_answers) * 100).toFixed(2);
-      this.timeElapsed = Math.floor((Date.now() - this.startTime) / 1000);
-      this.updateTimeFormat();
       this.saveResults();
     },
     calculateCorrectTiles() {
@@ -154,24 +152,40 @@ export default {
       }
 
       const testId = 10;
+      const payload = {
+        test: testId,
+        user: this.authStore.user.id,
+        score_percentage: Math.round(this.accuracy),
+        time: this.time,
+        number_all_answers: this.number_all_answers,
+        number_correct_answers: this.number_correct_answers,
+        accuracy: Math.round(this.accuracy)
+      };
+
+      console.log("Отправляемые данные:", payload);
+
       try {
-        await fetch("http://127.0.0.1:8000/api/result/", {
+        const response = await fetch("http://127.0.0.1:8000/api/result/", {
           method: "POST",
-          headers: { "Content-Type": "application/json", Authorization: `Bearer ${localStorage.getItem("token")}` },
-          body: JSON.stringify({
-            test: testId, 
-            user: this.authStore.user.id, 
-            score_percentage: parseFloat(this.accuracy),
-            time_spent: this.time, 
-            number_all_answers: this.number_all_answers, 
-            number_correct_answers: this.number_correct_answers
-          }),
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${localStorage.getItem("token")}`
+          },
+          body: JSON.stringify(payload),
         });
-        alert("Результаты сохранены!");
+
+        const data = await response.json();
+
+        if (!response.ok) {
+          throw new Error(data.detail || data.error || `Ошибка ${response.status}`);
+        }
+
+        alert("Результаты успешно сохранены!");
       } catch (error) {
-        console.error("Ошибка при отправке:", error);
+        console.error("Ошибка сохранения:", error);
+        alert(`Ошибка: ${error.message}`);
       }
-    },
+    }
   },
   beforeUnmount() {
     clearInterval(this.timer);

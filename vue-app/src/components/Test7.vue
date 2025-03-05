@@ -56,23 +56,28 @@ export default {
       gameStarted: false,
       gameEnded: false,
       currentRound: 0,
-      number_all_answers: 20, // Общее количество вопросов
-      number_correct_answers: 0, // Количество правильных ответов
+      number_all_answers: 20,
+      number_correct_answers: 0,
       feedback: "",
       leftBank: [],
       rightBank: [],
       maxValue: 1,
-      accuracy: 0,
-      time: "00:00:00", // Время в формате ЧЧ:ММ:СС
+      time: 0, // Храним время в секундах
       startTime: null,
     };
   },
   computed: {
-    accuracy() {
-      return this.number_all_answers > 0 
-        ? ((this.number_correct_answers / this.number_all_answers) * 100).toFixed(2) 
-        : "0.00";
+    formattedTime() {
+      const hours = String(Math.floor(this.time / 3600)).padStart(2, '0');
+      const minutes = String(Math.floor((this.time % 3600) / 60)).padStart(2, '0');
+      const sec = String(this.time % 60).padStart(2, '0');
+      return `${hours}:${minutes}:${sec}`;
     },
+    accuracy() {
+      return this.number_all_answers > 0
+        ? (this.number_correct_answers / this.number_all_answers) * 100
+        : 0;
+    }
   },
   methods: {
     startGame() {
@@ -82,8 +87,7 @@ export default {
       this.number_correct_answers = 0;
       this.feedback = "";
       this.maxValue = 1;
-      this.accuracy = 0;
-      this.time = "00:00:00";
+      this.time = 0;
       this.startTime = Date.now();
       this.generateRound();
     },
@@ -104,18 +108,15 @@ export default {
       const leftSum = this.leftBank.reduce((acc, coin) => acc + coin, 0);
       const rightSum = this.rightBank.reduce((acc, coin) => acc + coin, 0);
 
-      if ((choice === "left" && leftSum >= rightSum) || (choice === "right" && rightSum >= leftSum)) {
-        this.feedback = "Правильно!";
-        this.number_correct_answers++;
-      } else {
-        this.feedback = "Неправильно!";
-      }
+      const isCorrect = (choice === "left" && leftSum >= rightSum) ||
+                       (choice === "right" && rightSum >= leftSum);
+
+      this.feedback = isCorrect ? "Правильно!" : "Неправильно!";
+      if (isCorrect) this.number_correct_answers++;
 
       if (this.currentRound < this.number_all_answers) {
         this.currentRound++;
-        if (this.currentRound > 10) {
-          this.maxValue = 2;
-        }
+        this.maxValue = this.currentRound > 10 ? 2 : 1;
         setTimeout(() => {
           this.feedback = "";
           this.generateRound();
@@ -127,18 +128,8 @@ export default {
     endGame() {
       this.gameStarted = false;
       this.gameEnded = true;
-
-      // Рассчитываем время
-      const totalSeconds = Math.floor((Date.now() - this.startTime) / 1000);
-      this.time = this.formatTime(totalSeconds);
-
-      this.saveResults(); 
-    },
-    formatTime(seconds) {
-      const hours = String(Math.floor(seconds / 3600)).padStart(2, '0');
-      const minutes = String(Math.floor((seconds % 3600) / 60)).padStart(2, '0');
-      const sec = String(seconds % 60).padStart(2, '0');
-      return `${hours}:${minutes}:${sec}`;
+      this.time = Math.floor((Date.now() - this.startTime) / 1000);
+      this.saveResults();
     },
     async saveResults() {
       if (!this.authStore.user) {
@@ -146,8 +137,16 @@ export default {
         return;
       }
 
-      const testId = 7; 
-      const scorePercentage = parseFloat(this.accuracy);
+      const payload = {
+        test: 7,
+        user: this.authStore.user.id,
+        score_percentage: Math.round(this.accuracy),
+        time: this.formattedTime,
+        number_all_answers: this.number_all_answers,
+        number_correct_answers: this.number_correct_answers
+      };
+
+      console.log("Отправляемые данные:", payload);
 
       try {
         const response = await fetch("http://127.0.0.1:8000/api/result/", {
@@ -156,26 +155,25 @@ export default {
             "Content-Type": "application/json",
             Authorization: `Bearer ${localStorage.getItem("token")}`,
           },
-          body: JSON.stringify({
-            test: testId,
-            user: this.authStore.user.id,
-            score_percentage: scorePercentage,
-            time_spent: this.time, // Сохранение времени выполнения
-            number_all_answers: this.number_all_answers,
-            number_correct_answers: this.number_correct_answers
-          }),
+          body: JSON.stringify(payload),
         });
 
-        if (response.ok) {
-          alert("Результаты успешно сохранены!");
-        } else {
-          const errorData = await response.json();
-          alert(errorData.error || "Ошибка при сохранении результатов");
+        const data = await response.json();
+
+        if (!response.ok) {
+          throw new Error(data.detail || data.error || `Ошибка ${response.status}`);
         }
+
+        alert("Результаты успешно сохранены!");
       } catch (error) {
-        console.error("Ошибка при отправке результатов:", error);
+        console.error("Ошибка сохранения:", {
+          error: error.message,
+          payload,
+          stack: error.stack
+        });
+        alert(`Ошибка сохранения: ${error.message}`);
       }
-    },
+    }
   },
 };
 </script>

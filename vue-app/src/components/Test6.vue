@@ -64,7 +64,7 @@ export default {
         return {
             gameStarted: false,
             gameEnded: false,
-            timeRemaining: 30, 
+            timeRemaining: 30,
             timer: null,
             lives: 3,
             symbolsCount: 2,
@@ -86,8 +86,8 @@ export default {
             return this.formatTime(this.timeRemaining);
         },
         accuracy() {
-            return this.number_all_answers > 0 
-                ? ((this.number_correct_answers / this.number_all_answers) * 100).toFixed(2) 
+            return this.number_all_answers > 0
+                ? ((this.number_correct_answers / this.number_all_answers) * 100).toFixed(2)
                 : "0.00";
         },
     },
@@ -182,7 +182,7 @@ export default {
             }
 
             const testId = 6;
-            const scorePercentage = parseFloat(this.accuracy);
+            const scorePercentage = this.accuracy;
 
             try {
                 const response = await fetch("http://127.0.0.1:8000/api/result/", {
@@ -194,8 +194,8 @@ export default {
                     body: JSON.stringify({
                         test: testId,
                         user: this.authStore.user.id,
-                        score_percentage: scorePercentage,
-                        time_spent: this.time,
+                        score_percentage: Math.round(scorePercentage),
+                        time: this.time,
                         number_all_answers: this.number_all_answers,
                         number_correct_answers: this.number_correct_answers
                     }),
@@ -215,4 +215,3 @@ export default {
 </script>
 
 <style src="../assets/style.css"></style>
-

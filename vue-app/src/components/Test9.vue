@@ -55,27 +55,32 @@ export default {
   },
   data() {
     return {
-      cups: [0, 1, 2], 
-      ballPosition: 0, 
+      cups: [0, 1, 2],
+      ballPosition: 0,
       gameStarted: false,
       gameEnded: false,
       gameWon: false,
-      round: 1,       
-      number_all_answers: 5, // Всего раундов
-      number_correct_answers: 0, // Количество правильных ответов
+      round: 1,
+      number_all_answers: 5,
+      number_correct_answers: 0,
       message: "",
       showBall: false,
-      isSelectable: false, 
-      startTime: null,     
-      time: "00:00:00",  
-      accuracy: 0       
+      isSelectable: false,
+      startTime: null,
+      time: 0 // Храним время в секундах
     };
   },
   computed: {
     accuracy() {
-      return this.number_all_answers > 0
-        ? ((this.number_correct_answers / this.number_all_answers) * 100).toFixed(2)
-        : "0.00";
+      if (this.number_all_answers === 0) return 0;
+      const calculated = (this.number_correct_answers / this.number_all_answers) * 100;
+      return Number(calculated.toFixed(2));
+    },
+    formattedTime() {
+      const hours = String(Math.floor(this.time / 3600)).padStart(2, '0');
+      const minutes = String(Math.floor((this.time % 3600) / 60)).padStart(2, '0');
+      const sec = String(this.time % 60).padStart(2, '0');
+      return `${hours}:${minutes}:${sec}`;
     }
   },
   methods: {
@@ -131,7 +136,7 @@ export default {
       this.isSelectable = false;
       if (index === this.ballPosition) {
         this.message = "Правильно!";
-        this.number_correct_answers++; 
+        this.number_correct_answers++;
         if (this.round < this.number_all_answers) {
           this.round++;
           setTimeout(() => this.startRound(), 2000);
@@ -147,15 +152,8 @@ export default {
       this.gameEnded = true;
       this.gameStarted = false;
       this.gameWon = won;
-      const totalSeconds = Math.floor((Date.now() - this.startTime) / 1000);
-      this.time = this.formatTime(totalSeconds);
+      this.time = Math.floor((Date.now() - this.startTime) / 1000);
       this.saveResults();
-    },
-    formatTime(seconds) {
-      const hours = String(Math.floor(seconds / 3600)).padStart(2, '0');
-      const minutes = String(Math.floor((seconds % 3600) / 60)).padStart(2, '0');
-      const sec = String(seconds % 60).padStart(2, '0');
-      return `${hours}:${minutes}:${sec}`;
     },
     async saveResults() {
       if (!this.authStore.user) {
@@ -163,21 +161,41 @@ export default {
         return;
       }
 
-      const testId = 9; 
+      const testId = 9;
+      const payload = {
+        test: testId,
+        user: this.authStore.user.id,
+        score_percentage: Math.round(this.accuracy),
+        time: this.formattedTime,
+        number_all_answers: this.number_all_answers,
+        number_correct_answers: this.number_correct_answers,
+        accuracy: Math.round(this.accuracy)
+      };
+
+      console.log("Отправляемые данные:", payload);
+
       try {
-        await fetch("http://127.0.0.1:8000/api/result/", {
+        const response = await fetch("http://127.0.0.1:8000/api/result/", {
           method: "POST",
-          headers: { "Content-Type": "application/json", Authorization: `Bearer ${localStorage.getItem("token")}` },
-          body: JSON.stringify({
-            test: testId, user: this.authStore.user.id, score_percentage: parseFloat(this.accuracy),
-            time_spent: this.time, number_all_answers: this.number_all_answers, number_correct_answers: this.number_correct_answers
-          }),
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${localStorage.getItem("token")}`
+          },
+          body: JSON.stringify(payload),
         });
-        alert("Результаты сохранены!");
+
+        const data = await response.json();
+
+        if (!response.ok) {
+          throw new Error(data.detail || data.error || `Ошибка ${response.status}`);
+        }
+
+        alert("Результаты успешно сохранены!");
       } catch (error) {
-        console.error("Ошибка при отправке:", error);
+        console.error("Ошибка сохранения:", error);
+        alert(`Ошибка: ${error.message}`);
       }
-    },
+    }
   },
 };
 </script>
