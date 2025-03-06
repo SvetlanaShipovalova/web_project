@@ -3,39 +3,32 @@
   <div class="container mt-5 text-center">
     <h2>{{ $route.params.name }}</h2>
     <div id="app">
-      <div>
-        <div v-if="!gameStarted">
-          <h2>Тест на зрительно-моторную координацию</h2>
-          <p>В каждом раунде ты увидишь два шарика. Они будут двигаться вдоль своей оси.</p>
-          <p><strong>Цель:</strong> заставить их остановиться как можно ближе к пересечению линий.</p>
-          <button @click="startGame" class="start-button btn btn-primary">Начать игру</button>
+      <div v-if="currentView === 'start'">
+        <h1>Тест на быструю реакцию</h1>
+        <button id="start-button" @click="startTest">Начать тест</button>
+      </div>
+
+      <div v-else-if="currentView === 'test'">
+        <h2>Раунд {{ round }}</h2>
+        <p>Выберите цвет, которым написано слово.</p>
+        <h1 :style="{ color: currentColor }">{{ currentWord }}</h1>
+
+        <div class="buttons">
+          <button v-for="color in shuffledColors" :key="color" @click="checkAnswer(color)" :style="{ color: color }">{{ colorNames[color] }}</button>
         </div>
-        <div v-else>
-          <div class="game-container" @click="stopNextBall">
-            <div class="line vertical"></div>
-            <div class="line horizontal"></div>
-            <div
-              v-for="(ball, index) in balls"
-              :key="index"
-              class="ball"
-              :style="{ left: ball.x + 'px', top: ball.y + 'px', backgroundColor: ball.color }"
-            ></div>
-            <div class="score">Очки: {{ score }}</div>
-            <div class="level">Уровень: {{ level }}</div>
-          </div>
-          <div class="result mt-3" v-if="resultMessage">{{ resultMessage }}</div>
-          <div class="final-result mt-3" v-if="finalMessage">
-            <h3>{{ finalMessage }}</h3>
-            <p>Время выполнения теста: {{ time }}</p>
-            <p>Точность: {{ accuracy }}%</p>
-            <p>Попаданий в центр: {{ number_correct_answers }}</p>
-            <p>Общее количество попыток: {{ number_all_answers }}</p>
-          </div>
-          <button v-if="finalMessage" @click="restartGame" class="restart-button btn btn-warning mt-3">Начать заново</button>
-        </div>
-        <br> <router-link to="/tests" class="btn btn-secondary mt-3">Назад к тестам</router-link>
+      </div>
+
+      <div v-else-if="currentView === 'result'">
+        <h1>Результаты</h1>
+        <p>Точность: {{ accuracy }}%</p>
+        <p>Время: {{ time }}</p>
+        <p>Вопросов: {{ number_all_answers }}</p>
+        <p>Верных ответов: {{ number_correct_answers }}</p>
+        <button @click="restartTest">Повторить</button>
+        <button @click="goBack">Назад</button>
       </div>
     </div>
+    <router-link to="/tests" class="btn btn-secondary">Назад к тестам</router-link>
   </div>
 </template>
 
@@ -44,172 +37,96 @@ import Navbar from "../view/Navbar.vue";
 import { useAuthStore } from '../store/authStore';
 
 export default {
-  components: { Navbar },
+  components: {
+    Navbar,
+  },
   setup() {
     const authStore = useAuthStore();
     return { authStore };
   },
   data() {
     return {
-      gameStarted: false,
-      balls: [
-        { x: 140, y: 0, color: this.getRandomColor(), moving: true, direction: 'down' },
-        { x: 0, y: 140, color: this.getRandomColor(), moving: true, direction: 'right' },
-      ],
-      score: 0,
-      speed: 2,
-      interval: null,
-      nextBallIndex: 0,
-      resultMessage: '',
-      finalMessage: '',
-      level: 1,
-      time: "00:00:00",
-      number_all_answers: 0, // Общее количество попыток
-      number_correct_answers: 0, // Попадания в центр
-      accuracy: 0,
-      gameStartTime: null,
+      currentView: 'start',
+      round: 1,
+      colors: ["red", "blue", "green", "yellow", "black"],
+      colorNames: { red: "Красный", blue: "Синий", green: "Зелёный", yellow: "Жёлтый", black: "Чёрный" },
+      currentWord: "",
+      currentColor: "",
+      shuffledColors: [],
+      number_all_answers: 10,
+      number_correct_answers: 0,
+      totalTime: 0,
+      startTime: null
     };
   },
+  computed: {
+    time() {
+      return `${this.totalTime.toFixed(2)} сек`;
+    },
+    accuracy() {
+      if (this.number_all_answers === 0) return 0;
+      return Math.round((this.number_correct_answers / this.number_all_answers) * 100);
+    }
+  },
   methods: {
-    startGame() {
-      this.gameStarted = true;
-      this.score = 0;
-      this.level = 1;
-      this.speed = 2;
-      this.gameStartTime = Date.now();
-      this.number_all_answers = 0;
-      this.number_correct_answers = 0;
-      this.balls.forEach((ball, index) => {
-        ball.x = index === 0 ? 140 : 0;
-        ball.y = index === 0 ? 0 : 140;
-        ball.moving = true;
-      });
-      this.nextBallIndex = 0;
-      this.resultMessage = '';
-      this.finalMessage = '';
-      this.startInterval();
+    startTest() {
+      this.currentView = 'test';
+      this.startTime = performance.now();
+      this.nextRound();
     },
-    startInterval() {
-      this.interval = setInterval(() => {
-        this.moveBalls();
-        this.time = this.formatTime(Math.floor((Date.now() - this.gameStartTime) / 1000));
-      }, 50);
-    },
-    moveBalls() {
-      this.balls.forEach((ball) => {
-        if (ball.moving) {
-          if (ball.direction === 'down') {
-            ball.y += this.speed;
-            if (ball.y > 300) ball.y = 0;
-          }
-          if (ball.direction === 'right') {
-            ball.x += this.speed;
-            if (ball.x > 300) ball.x = 0;
-          }
-        }
-      });
-    },
-    stopNextBall() {
-      if (this.nextBallIndex < this.balls.length) {
-        const ball = this.balls[this.nextBallIndex];
-        ball.moving = false;
-        this.number_all_answers++; // Увеличиваем общее количество попыток
 
-        if (this.isAccurate(ball)) {
-          this.number_correct_answers++; // Увеличиваем точные попадания
-        }
-
-        this.calculateScore();
-        this.nextBallIndex++;
-
-        if (this.nextBallIndex === this.balls.length) {
-          this.displayResult();
-          this.nextLevel();
-        }
-      }
-    },
-    isAccurate(ball) {
-      const centerX = 140;
-      const centerY = 140;
-      const distance = Math.sqrt((ball.x - centerX) ** 2 + (ball.y - centerY) ** 2);
-      return distance <= 10; // Попадание в центр, если расстояние < 10 px
-    },
-    calculateScore() {
-      const centerX = 140;
-      const centerY = 140;
-
-      this.balls.forEach((ball) => {
-        const distance = Math.sqrt((ball.x - centerX) ** 2 + (ball.y - centerY) ** 2);
-        this.score += Math.max(0, 100 - distance);
-      });
-    },
-    displayResult() {
-      this.accuracy = ((this.number_correct_answers / this.number_all_answers) * 100).toFixed(2);
-
-      if (this.score > 1100) {
-        this.resultMessage = 'Отличный уровень координации!';
-      } else if (this.score >= 1000) {
-        this.resultMessage = 'Средний уровень координации.';
-      } else {
-        this.resultMessage = 'Координация нуждается в улучшении.';
-      }
-    },
-    nextLevel() {
-      if (this.level < 3) {
-        this.level++;
-        this.speed += 1;
-        this.resetGame();
-      } else {
-        this.finalMessage = `Игра завершена! Ваш финальный счет: ${this.score}`;
-        clearInterval(this.interval);
-        this.saveResults();
-      }
-    },
-    formatTime(seconds) {
-      const minutes = String(Math.floor(seconds / 60)).padStart(2, '0');
-      const sec = String(seconds % 60).padStart(2, '0');
-      return `00:${minutes}:${sec}`;
-    },
-    resetGame() {
-      this.balls.forEach((ball, index) => {
-        ball.x = index === 0 ? 140 : 0;
-        ball.y = index === 0 ? 0 : 140;
-        ball.moving = true;
-      });
-      this.nextBallIndex = 0;
-      this.resultMessage = '';
-    },
-    restartGame() {
-      this.startGame();
-    },
-    getRandomColor() {
-      const letters = '0123456789ABCDEF';
-      let color = '#';
-      for (let i = 0; i < 6; i++) {
-        color += letters[Math.floor(Math.random() * 16)];
-      }
-      return color;
-    },
-    async saveResults() {
-      if (!this.authStore.user) {
-        alert("Пользователь не авторизован. Пожалуйста, войдите в систему.");
+    nextRound() {
+      if (this.round > this.number_all_answers) {
+        this.endTest();
         return;
       }
+      const randomIndex = Math.floor(Math.random() * this.colors.length);
+      this.currentWord = this.colorNames[this.colors[randomIndex]];
+      this.currentColor = this.colors[(randomIndex + Math.floor(Math.random() * (this.colors.length - 1) + 1)) % this.colors.length];
+      this.shuffledColors = [...this.colors].sort(() => Math.random() - 0.5);
+    },
 
-      const testId = 13;
-      const scorePercentage = this.accuracy;
+    checkAnswer(color) {
+      if (color === this.currentColor) {
+        this.number_correct_answers++;
+      }
+      this.round++;
+      this.nextRound();
+    },
 
+    endTest() {
+      this.totalTime = (performance.now() - this.startTime) / 1000;
+      this.currentView = 'result';
+      this.saveResults();
+    },
+
+    restartTest() {
+      this.round = 1;
+      this.number_correct_answers = 0;
+      this.totalTime = 0;
+      this.currentView = 'start';
+    },
+
+    goBack() {
+      this.$router.push('/tests');
+    },
+
+    async saveResults() {
+      if (!this.authStore.user) {
+        alert("Для сохранения результатов необходимо авторизоваться");
+        return;
+      }
       try {
-        await fetch("http://127.0.0.1:8000/api/result/", {
+        await fetch("https://svetasy.pythonanywhere.com/api/result/", {
           method: "POST",
           headers: {
             "Content-Type": "application/json",
             Authorization: `Bearer ${localStorage.getItem("token")}`,
           },
           body: JSON.stringify({
-            test: testId,
+            test: 2,
             user: this.authStore.user.id,
-            score_percentage: Math.round(scorePercentage),
+            score_percentage: this.accuracy,
             time: this.time,
             number_all_answers: this.number_all_answers,
             number_correct_answers: this.number_correct_answers
@@ -219,82 +136,40 @@ export default {
       } catch (error) {
         console.error("Ошибка при отправке результатов:", error);
       }
-    },
-  },
-  beforeUnmount() {
-    clearInterval(this.interval);
-  },
+    }
+  }
 };
 </script>
 
-
 <style scoped>
-.game-container {
-  position: relative;
-  width: 300px;
-  height: 300px;
-  margin: auto;
-  background-color: #f0f0f0;
-  overflow: hidden;
+#app {
+  font-family: Avenir, Helvetica, Arial, sans-serif;
+  text-align: center;
+  color: #2c3e50;
+  margin-top: 60px;
 }
 
-.line {
-  position: absolute;
-  background-color: #000;
+h1 {
+  font-size: 2rem;
+  margin: 20px 0;
 }
 
-.vertical {
-  width: 2px;
-  height: 100%;
-  left: 50%;
-  top: 0;
-  transform: translateX(-50%);
+.buttons {
+  display: flex;
+  justify-content: center;
+  gap: 10px;
 }
 
-.horizontal {
-  height: 2px;
-  width: 100%;
-  top: 50%;
-  left: 0;
-  transform: translateY(-50%);
-}
-
-.ball {
-  position: absolute;
-  width: 20px;
-  height: 20px;
-  border-radius: 50%;
+button {
+  padding: 10px 20px;
+  font-size: 1.2rem;
   cursor: pointer;
+  border: none;
+  background-color: #f0f0f0;
+  transition: background-color 0.2s;
 }
 
-.score {
-  position: absolute;
-  top: 10px;
-  left: 10px;
-  font-size: 24px;
-  color: #333;
+button:hover {
+  background-color: #ddd;
 }
-
-.level {
-  position: absolute;
-  top: 40px;
-  left: 10px;
-  font-size: 24px;
-  color: #333;
-}
-
-.result {
-  margin-top: 10px;
-  text-align: center;
-  font-size: 20px;
-  color: #333;
-}
-
-.final-result {
-  margin-top: 5px;
-  text-align: center;
-  font-size: 20px;
-  color: #333;
-}
-
 </style>

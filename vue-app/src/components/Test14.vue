@@ -1,28 +1,40 @@
 <template>
   <Navbar />
   <div class="container mt-5 text-center">
-    <h2>{{ $route.params.name }}</h2>
+    <h2>Тест на внимательность</h2>
     <div id="app">
-      <div class="image-checker">
-        <h2>Найдите неточность на картинке</h2>
-        <button v-if="!gameStarted" @click="startGame">Начать игру</button>
-        <button v-if="gameStarted && !gameEnded" @click="endGame">Закончить игру</button> 
-        <div v-if="gameStarted">
-          <div class="image-container-wrapper">
-            <div v-for="(image, index) in images" :key="index" class="image-container">
-              <img :src="image.src" @click="checkSpot(index, $event)" />
-              <div v-if="highlightedSpots[index]" class="highlight" :style="highlightedSpots[index].style"></div>
-            </div>
+      <div v-if="!testStarted && !testFinished">
+        <h1 class="display-4">Найдите лишний символ!</h1>
+        <button class="btn btn-primary btn-lg" @click="startTest">Начать</button>
+      </div>
+
+      <div v-else-if="testStarted">
+        <p class="h5">Сравните строки и найдите лишний символ!</p>
+        <div class="row mb-4">
+          <div class="col-12">
+            <h4 class="display-5">{{ string1 }}</h4>
+            <h4 class="display-5">{{ string2 }}</h4>
           </div>
-          <p v-if="!gameEnded">{{ timer }} секунд осталось</p>
-          <p v-if="gameEnded">Игра окончена!</p>
-          <p v-if="gameEnded">Попаданий: {{ number_correct_answers }} из {{ number_all_answers }} возможных отличий.</p>
-          <p v-if="gameEnded">Время, затраченное на игру: {{ time }}</p>
-          <p v-if="gameEnded">Точность: {{ accuracy }}%</p>
-          <button v-if="gameEnded" @click="startGame">Начать заново</button>
         </div>
-        <br>
-        <router-link to="/tests" class="btn btn-secondary">Назад к тестам</router-link>
+        <div class="row mb-4">
+          <div
+            v-for="(char, index) in allCharacters"
+            :key="index"
+            class="col-2 border d-flex justify-content-center align-items-center p-3"
+            :class="{'bg-success': selectedChar === char && char === extraChar, 'bg-danger': selectedChar === char && char !== extraChar}"
+            @click="selectCharacter(char)"
+          >
+            {{ char }}
+          </div>
+        </div>
+      </div>
+
+      <div v-else-if="testFinished">
+        <h3 class="display-5">Тест завершен!</h3>
+        <p>⏳ Время выполнения: {{ formattedTime }}</p>
+        <p>✅ Правильные ответы: {{ number_correct_answers }} из {{ number_all_answers }}</p>
+        <p>🎯 Точность: {{ accuracy }}%</p>
+        <router-link to="/tests" class="btn btn-secondary mt-3">Назад к тестам</router-link>
       </div>
     </div>
   </div>
@@ -31,189 +43,125 @@
 <script>
 import Navbar from "../view/Navbar.vue";
 import { useAuthStore } from '../store/authStore';
-import img_1 from '../assets/test_res/img_1.png';
-import img_2 from '../assets/test_res/img_2.png';
-import img_3 from '../assets/test_res/img_3.png';
-import img_4 from '../assets/test_res/img_4.png';
-import img_5 from '../assets/test_res/img_5.png';
-import img_6 from '../assets/test_res/img_6.png';
-import img_7 from '../assets/test_res/img_7.png';
-import img_8 from '../assets/test_res/img_8.png';
 
 export default {
-  components: { Navbar },
-  setup() {
-    const authStore = useAuthStore();
-    return { authStore };
+  components: {
+    Navbar,
   },
   data() {
     return {
-      images: [
-        { src: img_1, correctSpot: { x: 210, y: 70 } },
-        { src: img_2, correctSpot: { x: 60, y: 25 } },
-        { src: img_3, correctSpot: { x: 245, y: 60 } },
-        { src: img_4, correctSpot: { x: 150, y: 80 } },
-        { src: img_5, correctSpot: { x: 100, y: 155 } },
-        { src: img_6, correctSpot: { x: 240, y: 90 } },
-        { src: img_7, correctSpot: { x: 25, y: 70 } },
-        { src: img_8, correctSpot: { x: 260, y: 135 } },
-      ],
-      highlightedSpots: {},
-      gameEnded: false,
-      gameStarted: false,
-      timer: 60,
-      time: "00:00:00",
-      accuracy: 0,
-      number_all_answers: 0,   // Общее количество изображений (вопросов)
-      number_correct_answers: 0, // Сколько пользователь ответил правильно
+      testStarted: false,
+      testFinished: false,
+      string1: '',
+      string2: '',
+      extraChar: '',
+      allCharacters: [],
+      selectedChar: null,
+      number_all_answers: 1,
+      number_correct_answers: 0,
+      timeLeft: 60,
+      timer: null,
     };
   },
+  computed: {
+    formattedTime() {
+      const minutes = Math.floor(this.timeLeft / 60);
+      const seconds = this.timeLeft % 60;
+      return `${minutes.toString().padStart(2, "0")}:${seconds.toString().padStart(2, "0")}`;
+    },
+    accuracy() {
+      return this.number_all_answers > 0 ? ((this.number_correct_answers / this.number_all_answers) * 100).toFixed(2) : 0;
+    },
+  },
   methods: {
-    startGame() {
-      this.gameStarted = true;
-      this.gameEnded = false;
-      this.timer = 60;
-      this.time = "00:00:00";
-      this.highlightedSpots = {};
-      this.number_correct_answers = 0;
-      this.number_all_answers = this.images.length; // Всегда равно количеству изображений
+    startTest() {
+      this.testStarted = true;
+      this.testFinished = false;
+      this.generateStrings();
       this.startTimer();
     },
-    checkSpot(index, event) {
-      if (this.gameEnded) return;
+    generateStrings() {
+      const symbols = "ⶍ⇈⑸⋍⸛ⱗ⸀≴⬻⥏ⴈ⩡⇭⭑⭜⚱⫈";
+      const array = symbols.split('');
+      this.extraChar = array[Math.floor(Math.random() * array.length)];
+      
+      // Create two strings where one has an extra character
+      this.string1 = this.shuffle(array.slice()).join('') + this.extraChar; // String with extra character
+      this.string2 = this.shuffle(array.slice()).join(''); // String without extra character
 
-      const rect = event.target.getBoundingClientRect();
-      const clickX = event.clientX - rect.left;
-      const clickY = event.clientY - rect.top;
-
-      const correctSpot = this.images[index].correctSpot;
-      const errorMargin = 30;
-
-      if (
-        clickX >= correctSpot.x - errorMargin &&
-        clickX <= correctSpot.x + errorMargin &&
-        clickY >= correctSpot.y - errorMargin &&
-        clickY <= correctSpot.y + errorMargin
-      ) {
-        if (!this.highlightedSpots[index]) {
-          this.highlightedSpots = {
-            ...this.highlightedSpots,
-            [index]: {
-              style: {
-                position: 'absolute',
-                left: `${correctSpot.x - errorMargin}px`,
-                top: `${correctSpot.y - errorMargin}px`,
-                width: `${errorMargin * 2}px`,
-                height: `${errorMargin * 2}px`,
-                border: '2px solid red',
-                borderRadius: '50%',
-                pointerEvents: 'none'
-              }
-            }
-          };
-          this.number_correct_answers++;
-        }
-      }
-
-      this.checkGameEnd();
+      // Prepare all characters for selection
+      this.allCharacters = [...new Set(this.string1.split('').concat(this.string2.split('')))];
+      this.allCharacters = this.shuffle(this.allCharacters); // Shuffle for random display
     },
-    checkGameEnd() {
-      if (this.number_correct_answers === this.number_all_answers || this.timer <= 0) {
-        this.endGame();
+    shuffle(array) {
+      for (let i = array.length - 1; i > 0; i--) {
+        const j = Math.floor(Math.random() * (i + 1));
+        [array[i], array[j]] = [array[j], array[i]];
       }
+      return array;
+    },
+    selectCharacter(char) {
+      this.selectedChar = char;
+      if (char === this.extraChar) {
+         this.number_correct_answers++;
+      }
+      this.finishTest(); // Завершение теста после выбора
+    },
+    finishTest() {
+      this.testFinished = true;
+      clearInterval(this.timer); // Останавливаем таймер
+      this.saveResults(); // Сохраняем результаты
     },
     startTimer() {
-      this.timerInterval = setInterval(() => {
-        if (this.timer > 0) {
-          this.timer--;
+      this.timer = setInterval(() => {
+        if (this.timeLeft > 0) {
+          this.timeLeft--;
         } else {
-          this.endGame();
+          this.finishTest(); // Завершение теста при истечении времени
         }
       }, 1000);
     },
-    endGame() {
-      if (this.gameEnded) return;
-
-      this.gameEnded = true;
-      clearInterval(this.timerInterval);
-
-      const elapsedSeconds = 60 - this.timer;
-      this.time = this.formatTime(elapsedSeconds);
-
-      // Корректный расчет точности
-      this.accuracy = this.number_all_answers > 0 
-        ? ((this.number_correct_answers / this.number_all_answers) * 100).toFixed(2) 
-        : "0.00";
-
-      this.saveResults();
-    },
-    formatTime(seconds) {
-      const minutes = String(Math.floor(seconds / 60)).padStart(2, '0');
-      const sec = String(seconds % 60).padStart(2, '0');
-      return `00:${minutes}:${sec}`;
-    },
     async saveResults() {
-      if (!this.authStore.user) {
-        alert("Пользователь не авторизован. Пожалуйста, войдите в систему.");
+      const authStore = useAuthStore();
+      if (!authStore.user) {
+        alert("Пользователь не авторизован. Войдите в систему.");
         return;
       }
-
-      const testId = 14;
-      const scorePercentage = this.accuracy;
-
       try {
-        const response = await fetch("http://127.0.0.1:8000/api/result/", {
+        const response = await fetch("https://svetasy.pythonanywhere.com/api/result/", {
           method: "POST",
           headers: {
             "Content-Type": "application/json",
             Authorization: `Bearer ${localStorage.getItem("token")}`,
           },
           body: JSON.stringify({
-            test: testId,
-            user: this.authStore.user.id,
-            score_percentage: Math.round(scorePercentage),
-            time: this.time,
-            number_all_answers: this.number_all_answers,
-            number_correct_answers: this.number_correct_answers
+            test: 18, // ID теста
+            user: authStore.user.id,
+            score_percentage: Math.round(this.accuracy),
+            time: this.formattedTime, // Время выполнения
+            number_all_answers: this.number_all_answers, // Всегда 1
+            number_correct_answers: this.number_correct_answers, // Сколько правильно
           }),
         });
 
         if (response.ok) {
           alert("Результаты успешно сохранены!");
         } else {
-          alert("Ошибка при сохранении результатов");
+          const errorData = await response.json();
+          console.error("Ошибка сервера:", errorData);
+          alert(errorData.error || "Ошибка при сохранении результатов");
         }
       } catch (error) {
         console.error("Ошибка при отправке результатов:", error);
       }
-    }
+    },
   },
   beforeUnmount() {
-    clearInterval(this.timerInterval);
-  }
+    clearInterval(this.timer); // Останавливаем таймер при размонтировании компонента
+  },
 };
 </script>
 
-<style>
-.image-container-wrapper {
-  display: flex;
-  flex-wrap: wrap;
-  justify-content: center;
-}
-
-.image-container {
-  position: relative;
-  display: inline-block;
-  margin: 10px;
-  width: 300px;
-}
-
-.image-container img {
-  width: 100%;
-  height: auto;
-}
-
-.highlight {
-  position: absolute;
-}
+<style scoped>
+/* Стили не используются, но можно добавить дополнительные стили, если потребуется */
 </style>
