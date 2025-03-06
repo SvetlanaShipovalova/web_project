@@ -11,7 +11,7 @@
         <p>
           <strong>Цель игры:</strong> Сравнить строки и найти лишний символ, выбрать его в приведённой таблице.
         </p>
-        <button class="btn btn-primary btn-lg" @click="startTest">Начать</button>
+        <button class="btn btn-primary btn-lg" @click="startTest">Начать тест</button>
       </div>
 
       <div v-else-if="testStarted">
