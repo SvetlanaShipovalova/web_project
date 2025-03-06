@@ -1,70 +1,54 @@
-<template>
+<template> 
   <Navbar />
   <div class="container mt-5 text-center">
-    <h2>Тест на внимательность</h2>
-    
-    <div v-if="!testStarted && !testFinished">
-      <h1 class="display-4">Запишите числа!</h1>
-      <button class="btn btn-primary btn-lg" @click="startTest">Начать</button>
-    </div>
-
-    <div v-else-if="testStarted">
-      <table class="table table-bordered">
-        <thead>
-          <tr>
-            <th>Число</th>
-          </tr>
-        </thead>
-        <tbody>
-          <tr v-for="(index) in numbers" :key="index">
-            <td>
-              <input
-                type="text"
-                class="form-control"
-                v-model="userInputs[index]"
-                placeholder="Введите число"
-              />
-            </td>
-          </tr>
-        </tbody>
-      </table>
-
-      <div class="mt-4">
-        <h4>Следующее число: {{ currentNumber }}</h4>
+    <h2>Тест 11</h2>
+    <div id="app">
+      <!-- Начальный экран -->
+      <div v-if="!gameStarted && !gameEnded">
+        <h1>Тест на внимательность</h1>
+        <p>
+          <strong>Игра:</strong> "Тест на внимательность" — это игра для развития концентрации и скорости восприятия.
+        </p>
+        <p>
+          <strong>Цель игры:</strong> Среди множества чисел "44" найдите одно число "45" и нажмите на него как можно быстрее.
+        </p>
+        <button class="start-button btn btn-primary" @click="startGame">Начать игру</button>
       </div>
-      <button class="btn btn-danger mt-3" @click="finishTest">Завершить тест</button>
-    </div>
 
-    <div v-else>
-      <h3 class="display-5">Тест завершен!</h3>
-      <p>⏳ Время выполнения: {{ formattedTime }}</p>
-      <p>✅ Правильные ответы: {{ number_correct_answers }} из {{ number_all_answers }}</p>
-      <p>🎯 Точность: {{ accuracy }}%</p>
-      <button class="btn btn-secondary mt-3" @click="resetTest">Пройти тест снова</button>
+      <!-- Игровой экран -->
+      <div v-else-if="gameStarted">
+        <p>Время: {{ time }}</p>
+        <p>Раунд: {{ currentRound }} / {{ number_all_answers }}</p>
+        <p>Правильные ответы: {{ number_correct_answers }} / {{ number_all_answers }}</p>
+        <div class="game-area d-flex flex-wrap justify-content-center">
+          <div v-for="(num, index) in grid" :key="index" 
+               class="number-cell" 
+               @click="handleClick(num)">{{ num }}</div>
+        </div>
+      </div>
+
+      <!-- Финальный экран -->
+      <div v-if="gameEnded" class="end-message">
+        <h3>Игра завершена!</h3>
+        <p>Время: {{ time }}</p>
+        <p>Правильные ответы: {{ number_correct_answers }} / {{ number_all_answers }}</p>
+        <p>Точность: {{ accuracy }}%</p>
+        <button class="btn btn-success" @click="restartGame">Пройти снова</button>
+      </div>
+      <router-link to="/tests" class="btn btn-secondary mt-3">Назад к тестам</router-link>
     </div>
   </div>
 </template>
 
 <script>
 import Navbar from "../view/Navbar.vue";
-import { useAuthStore } from '../store/authStore';
-
 export default {
-  components: {
-    Navbar,
-  },
-  setup() {
-    const authStore = useAuthStore();
-    return { authStore };
-  },
+  components: { Navbar },
   data() {
     return {
-      testStarted: false,
-      testFinished: false,
-      numbers: [],
-      currentNumber: null,
-      userInputs: Array(8).fill(''), // Массив для ввода пользователем
-      number_all_answers: 8, // Всегда 8
+      gameStarted: false,
+      gameEnded: false,
+      number_all_answers: 10,
       number_correct_answers: 0,
       displayIndex: 0,
       timeLeft: 60, // Время выполнения теста в секундах
@@ -78,10 +62,11 @@ export default {
       return `${minutes.toString().padStart(2, "0")}:${seconds.toString().padStart(2, "0")}`;
     },
     accuracy() {
-      return this.number_all_answers > 0 ? ((this.number_correct_answers / this.number_all_answers) * 100).toFixed(2) : 0;
+      return this.number_all_answers ? ((this.number_correct_answers / this.number_all_answers) * 100).toFixed(2) : 0;
     },
   },
   methods: {
+<<<<<<< HEAD
     startTest() {
       this.testStarted = true;
       this.testFinished = false;
@@ -127,52 +112,111 @@ export default {
         return count + (parseInt(input) === this.numbers[index] ? 1 : 0);
       }, 0); // Подсчет правильных ответов
       this.saveResults(); // Сохраняем результаты
+=======
+    startGame() {
+      this.gameStarted = true;
+      this.gameEnded = false;
+      this.number_correct_answers = 0;
+      this.currentRound = 0;
+      this.elapsedTime = 0;
+      this.time = "00:00:00";
+      this.startTimer();
+      this.nextRound();
+    },
+    startTimer() {
+      this.startTime = performance.now();
+      this.timerInterval = setInterval(() => {
+        const totalSeconds = Math.floor((performance.now() - this.startTime) / 1000);
+        this.time = new Date(totalSeconds * 1000).toISOString().substr(11, 8);
+      }, 1000);
+    },
+    stopTimer() {
+      clearInterval(this.timerInterval);
+    },
+    nextRound() {
+      if (this.currentRound >= this.number_all_answers) {
+        this.endGame();
+        return;
+      }
+      this.currentRound++;
+      this.generateGrid();
+    },
+    generateGrid() {
+      this.grid = Array(300).fill(44);
+      const randomIndex = Math.floor(Math.random() * 300);
+      this.grid[randomIndex] = 45;
+    },
+    handleClick(num) {
+      if (num === 45) {
+        this.number_correct_answers++;
+      }
+      this.nextRound();
+    },
+    endGame() {
+      this.stopTimer();
+      this.gameStarted = false;
+      this.gameEnded = true;
+      this.saveResults();
+    },
+    restartGame() {
+      this.stopTimer();
+      this.startGame();
+>>>>>>> d56161a91d3fcd9674f26ad66010e360c26bbd84
     },
     async saveResults() {
       try {
-        const response = await fetch("https://svetasy.pythonanywhere.com/api/result/", {
+        const response = await fetch("http://127.0.0.1:8000/api/result/", {
           method: "POST",
           headers: {
             "Content-Type": "application/json",
-            Authorization: `Bearer ${localStorage.getItem("token")}`,
           },
           body: JSON.stringify({
-            test: 11,
-            user: this.authStore.user.id,
-            score_percentage: Math.round(this.accuracy),
-            time: this.formattedTime, // Время выполнения
-            number_all_answers: this.number_all_answers, // Всегда 8
-            number_correct_answers: this.number_correct_answers, // Сколько правильно
+            test: 2,
+            score_percentage: parseInt(this.accuracy, 10),
+            time: this.time,
+            number_all_answers: this.number_all_answers,
+            number_correct_answers: this.number_correct_answers,
+            accuracy: parseInt(this.accuracy, 10),
           }),
         });
-
         if (response.ok) {
           alert("Результаты успешно сохранены!");
         } else {
-          const errorData = await response.json();
-          console.error("Ошибка сервера:", errorData);
-          alert(errorData.error || "Ошибка при сохранении результатов");
+          alert("Ошибка при сохранении результатов");
         }
       } catch (error) {
-        console.error("Ошибка при отправке результатов:", error);
+        alert("Ошибка соединения с сервером");
       }
     },
-    resetTest() {
-      this.testStarted = false;
-      this.testFinished = false;
-      this.displayIndex = 0;
-      this.number_correct_answers = 0;
-      this.userInputs = Array(8).fill(''); // Сброс массива ввода
-      this.timeLeft = 60; // Сброс времени
-      this.currentNumber = null; // Сброс текущего числа
-    },
-  },
-  beforeUnmount() {
-    clearInterval(this.timer); // Останавливаем таймер при размонтировании компонента
   },
 };
 </script>
 
-<style scoped>
-/* Стили не используются, но можно добавить дополнительные стили, если потребуется */
+<style>
+.container {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.game-area {
+  display: grid;
+  grid-template-columns: repeat(20, 30px);
+  gap: 5px;
+  margin-top: 20px;
+  justify-content: center;
+}
+
+.number-cell {
+  width: 30px;
+  height: 30px;
+  background-color: black;
+  color: yellow;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 18px;
+  cursor: pointer;
+  border-radius: 3px;
+}
 </style>

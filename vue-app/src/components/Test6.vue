@@ -1,20 +1,20 @@
-<template> 
+<template>  
     <Navbar />
     <div class="container mt-5 text-center">
       <h2>{{ $route.params.name }}</h2>
       <div id="app">
         <div v-if="!gameStarted && !gameEnded">
           <h1>Игра "Сравнение объектов"</h1>
-          <p><strong>"Сравнение объектов"</strong> — это игра для развития произвольного внимания и концентрации.</p>
+          <p><strong>Игра:</strong> "Сравнение объектов" — это когнитивная игра для тренировки внимания, концентрации и способности к быстрому анализу визуальной информации.</p>
           <p><strong>Цель игры:</strong> сравнить два изображения и определить, совпадают ли они.</p>
-          <p>Игра помогает тренировать внимание, увеличивать концентрацию и улучшать способность к быстрому анализу.</p>
+          <p>Нажмите "Начать игру", после чего на экране появится два набора изображений. Ваша задача — внимательно сравнить их и выбрать правильный ответ, нажав "Да", если изображения идентичны, или "Нет", если они различаются. За каждую ошибку теряется одна жизнь.</p>
           <button class="start-button btn btn-primary" @click="startGame">Начать игру</button>
         </div>
 
         <div v-else-if="gameStarted">
           <p>Оставшееся время: {{ formattedTime }}</p>
           <p>Жизни: {{ lives }}</p>
-          <p>Раунд: {{ number_all_answers }}</p>
+          <p>Раунд: {{ currentRound }} / {{ number_all_answers }}</p>
           <p>Правильные ответы: {{ number_correct_answers }} / {{ number_all_answers }}</p>
 
           <div class="game-area d-flex justify-content-center">
@@ -43,12 +43,14 @@
           <p>Правильные ответы: {{ number_correct_answers }} из {{ number_all_answers }}</p>
           <p>Точность: {{ accuracy }}%</p>
           <p>Время выполнения: {{ time }}</p>
+          <p><strong>Совет:</strong> Постарайтесь улучшить свою скорость и точность, тренируя внимательность и концентрацию.</p>
         </div>
 
         <router-link to="/tests" class="btn btn-secondary">Назад к тестам</router-link>
       </div>
     </div>
 </template>
+
 
 <script>
 import Navbar from "../view/Navbar.vue";

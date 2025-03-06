@@ -33,7 +33,6 @@
 
 <script>
 import Navbar from "../view/Navbar.vue";
-import { useAuthStore } from '../store/authStore';
 
 export default {
   components: {
@@ -48,9 +47,15 @@ export default {
       secondCardIndex: null,
       lockBoard: false,
       matchedCards: 0,
+<<<<<<< HEAD
       authStore: useAuthStore(),
       number_all_answers: 20,
       number_correct_answers: 0,
+=======
+      number_all_answers: 10,
+      number_correct_answers: 0,
+      gameStarted: false,
+>>>>>>> d56161a91d3fcd9674f26ad66010e360c26bbd84
       gameEnded: false,
       startTime: null,
       elapsedTime: 0,
@@ -91,6 +96,7 @@ export default {
     },
     disableCards() {
       this.matchedCards += 2;
+<<<<<<< HEAD
       this.number_correct_answers += 2;
       this.resetBoard();
       if (this.matchedCards === this.emojis.length) {
@@ -154,6 +160,46 @@ export default {
         console.error("Ошибка при отправке результатов:", error);
         alert("Ошибка соединения с сервером");
       }
+=======
+      this.number_correct_answers += 1;
+      this.resetBoard();
+      if (this.matchedCards === this.emojis.length) {
+        this.endGame();
+      }
+    },
+    unflipCards() {
+      setTimeout(() => {
+        this.cardStates[this.firstCardIndex] = "?";
+        this.cardStates[this.secondCardIndex] = "?";
+        this.resetBoard();
+      }, 1000);
+    },
+    resetBoard() {
+      this.firstCardIndex = null;
+      this.secondCardIndex = null;
+      this.lockBoard = false;
+    },
+    startGame() {
+      this.matchedCards = 0;
+      this.cardStates = Array(this.emojis.length).fill("?");
+      this.shuffledEmojis = this.shuffle([...this.emojis]);
+      this.gameStarted = true;
+      this.gameEnded = false;
+      this.number_correct_answers = 0;
+      this.elapsedTime = 0;
+      this.startTime = Date.now();
+      this.timer = setInterval(() => {
+        this.elapsedTime = Math.floor((Date.now() - this.startTime) / 1000);
+      }, 1000);
+    },
+    endGame() {
+      this.gameEnded = true;
+      this.gameStarted = false;
+      clearInterval(this.timer);
+    },
+    restartGame() {
+      this.startGame();
+>>>>>>> d56161a91d3fcd9674f26ad66010e360c26bbd84
     },
   },
   mounted() {

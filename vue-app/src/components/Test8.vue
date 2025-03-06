@@ -1,47 +1,49 @@
 <template>
-  <Navbar />
-  <div class="container mt-5 text-center">
-      <div class="game-container sequence-test-container">
-          <div v-if="!gameStarted && !gameEnded">
-              <h2>{{ $route.params.name }}</h2>
-              <p><strong>"Тест Числовых Последовательностей"</strong> — это тест для развития логического мышления и аналитических способностей.</p>
-              <p><strong>Цель игры:</strong> разгадать закономерность числовой последовательности и выбрать правильное число.</p>
-              <button class="start-button btn btn-primary" @click="startGame">Начать тест</button>
-          </div>
-
-          <div v-else-if="gameStarted">
-              <div class="info">
-                  <p>Вопрос: {{ currentQuestion + 1 }} / {{ number_all_answers }}</p>
-                  <p>Правильные ответы: {{ number_correct_answers }} / {{ number_all_answers }}</p>
-              </div>
-              <div class="sequence">
-                  <p v-html="questions[currentQuestion].sequence"></p>
-              </div>
-              <div class="answers">
-                  <button
-                      v-for="(option, index) in questions[currentQuestion].options"
-                      :key="index"
-                      @click="handleAnswer(option)"
-                      :disabled="answered"
-                      class="answer-button btn btn-outline-primary mx-1"
-                  >
-                      {{ option }}
-                  </button>
-              </div>
-              <p v-if="answered" class="feedback message mt-3">{{ feedback }}</p>
-          </div>
-
-          <div v-if="gameEnded" class="results end-message">
-              <h3>Тест завершён!</h3>
-              <p>Вы ответили правильно на {{ number_correct_answers }} из {{ number_all_answers }} вопросов.</p>
-              <p>Точность: {{ accuracy }}%</p>
-              <p>Время выполнения: {{ time }}</p>
-              <p class="final-message">{{ finalMessage }}</p>
-          </div>
-          <router-link to="/tests" class="btn btn-secondary">Назад к тестам</router-link>
-      </div>
-  </div>
-</template>
+    <Navbar />
+    <div class="container mt-5 text-center">
+        <div class="game-container sequence-test-container">
+            <div v-if="!gameStarted && !gameEnded">
+                <h2>{{ $route.params.name }}</h2>
+                <p><strong>Игра:</strong> "Тест Числовых Последовательностей" — это когнитивный тест, направленный на развитие логического мышления, аналитических способностей и умения выявлять закономерности.</p>
+                <p><strong>Цель игры:</strong> Определить недостающее число в числовой последовательности, выбрав правильный вариант среди предложенных ответов.</p>
+                <p>Нажмите "Начать тест", чтобы приступить к решению задач. На экране появится числовая последовательность с пропущенным элементом. Вам необходимо проанализировать закономерность и выбрать верный ответ из предложенных вариантов.</p>
+                <button class="start-button btn btn-primary" @click="startGame">Начать тест</button>
+            </div>
+  
+            <div v-else-if="gameStarted">
+                <div class="info">
+                    <p>Вопрос: {{ currentQuestion + 1 }} / {{ number_all_answers }}</p>
+                    <p>Правильные ответы: {{ number_correct_answers }} / {{ number_all_answers }}</p>
+                </div>
+                <div class="sequence">
+                    <p v-html="questions[currentQuestion].sequence"></p>
+                </div>
+                <div class="answers">
+                    <button
+                        v-for="(option, index) in questions[currentQuestion].options"
+                        :key="index"
+                        @click="handleAnswer(option)"
+                        :disabled="answered"
+                        class="answer-button btn btn-outline-primary mx-1"
+                    >
+                        {{ option }}
+                    </button>
+                </div>
+                <p v-if="answered" class="feedback message mt-3">{{ feedback }}</p>
+            </div>
+  
+            <div v-if="gameEnded" class="results end-message">
+                <h3>Тест завершён!</h3>
+                <p>Вы ответили правильно на {{ number_correct_answers }} из {{ number_all_answers }} вопросов.</p>
+                <p>Точность: {{ accuracy }}%</p>
+                <p>Время выполнения: {{ time }}</p>
+                <p class="final-message">{{ finalMessage }}</p>
+                <p><strong>Попробуйте улучшить свой результат, анализируя числа быстрее и точнее!</strong></p>
+            </div>
+            <router-link to="/tests" class="btn btn-secondary">Назад к тестам</router-link>
+        </div>
+    </div>
+  </template>
 
 <script>
 import Navbar from "../view/Navbar.vue";
