@@ -30,8 +30,8 @@
         <button @click="restartTest">Повторить</button>
         <button @click="goBack">Назад</button>
       </div>
+      <router-link to="/tests" class="btn btn-secondary">Назад к тестам</router-link>
     </div>
-    <router-link to="/tests" class="btn btn-secondary">Назад к тестам</router-link>
   </div>
 </template>
 

@@ -1,40 +1,33 @@
 <template>
-  <Navbar />
+<Navbar />
   <div class="container mt-5 text-center">
-    <h2>{{ $route.params.name }}</h2>
-    <div id="app">
-      <div v-if="currentView === 'start'">
-        <h1>Игра "Тест на память"</h1>
-        <p><strong>"Тест на память"</strong> — это игра на развитие внимания и концентрации.</p>
-        <p><strong>Цель:</strong> Найдите все пары за 60 секунд.</p>
-        <button class="btn btn-primary" @click="startGame">Начать игру</button>
+    <h2>Найди пары смайлов!</h2>
+    <p>
+          <strong>Цель игры:</strong> Нажмите "Начать игру", чтобы увидеть сетку закрытых карточек. Кликайте по ним, чтобы открывать смайлики. </p>
+          <p>Если изображения совпадают, карточки остаются открытыми, если нет – они закроются через секунду. Игра продолжается, пока не будут найдены все пары. В конце отображаются время прохождения, количество найденных пар и точность.
+        </p>
+    <div class="row mt-4">
+      <div 
+        v-for="(emoji, index) in shuffledEmojis" 
+        :key="index" 
+        class="col-2 card m-2 p-4 bg-light text-center" 
+        @click="flipCard(index)"
+      >
+        <span class="emoji" style="font-size: 2em">{{ cardStates[index] }}</span>
       </div>
-
-      <div v-else-if="currentView === 'test'">
-        <p>Оставшееся время: {{ formattedTime }}</p>
-        <div class="cards-container d-flex flex-wrap justify-content-center">
-          <div v-for="(card, index) in cards" :key="index" class="card"
-               :class="{'flipped': card.flipped || card.matched, 'matched': card.matched}"
-               @click="flipCard(card)">
-            <div class="card-inner">
-              <div class="card-front"></div>
-              <div class="card-back">
-                <span>{{ card.value }}</span>
-              </div>
-            </div>
-          </div>
-        </div>
-      </div>
-
-      <div v-else-if="currentView === 'result'">
-        <h3>Результаты</h3>
-        <p>Время выполнения: {{ time }}</p>
-        <p>Правильные ответы: {{ number_correct_answers }} / {{ number_all_answers }}</p>
-        <p>Точность: {{ accuracy }}%</p>
-        <button class="btn btn-success" @click="restartGame">Начать заново</button>
-      </div>
-      <router-link to="/tests" class="btn btn-secondary">Назад к тестам</router-link>
     </div>
+    <button class="btn btn-primary mt-4" @click="startGame">Начать заново</button>
+    
+    <div v-if="gameEnded" class="end-message mt-4">
+      <h3>Игра завершена!</h3>
+      <p>Правильные ответы: {{ number_correct_answers }} / {{ number_all_answers }}</p>
+      <p>Точность: {{ accuracy }}%</p>
+      <p>Время выполнения: {{ formattedTime }}</p>
+    </div>
+    
+    <router-link to="/tests" class="btn btn-secondary">
+      Назад к тестам
+    </router-link>
   </div>
 </template>
 
@@ -43,208 +36,137 @@ import Navbar from "../view/Navbar.vue";
 import { useAuthStore } from '../store/authStore';
 
 export default {
-  components: { Navbar },
-  setup() {
-    const authStore = useAuthStore();
-    return { authStore };
+  components: {
+    Navbar,
   },
   data() {
     return {
-      currentView: 'start',
-      cards: [],
-      flippedCards: [],
-      matchedPairs: [],
-      number_all_answers: 8,
+      emojis: ["😀", "😀", "😃", "😃", "😄", "😄", "😁", "😁", "😆", "😆", "😅", "😅", "😂", "😂", "🤣", "🤣", "😜", "😜", "🤪", "🤪"],
+      shuffledEmojis: [],
+      cardStates: [],
+      firstCardIndex: null,
+      secondCardIndex: null,
+      lockBoard: false,
+      matchedCards: 0,
+      authStore: useAuthStore(),
+      number_all_answers: 20,
       number_correct_answers: 0,
-      remainingTime: 60,
-      timeElapsed: 0,
-      time: "00:00:00",
-      gameTimer: null,
+      gameEnded: false,
       startTime: null,
+      elapsedTime: 0,
+      timer: null,
     };
   },
   computed: {
-    formattedTime() {
-      const minutes = Math.floor(this.remainingTime / 60).toString().padStart(2, "0");
-      const seconds = (this.remainingTime % 60).toString().padStart(2, "0");
-      return `00:${minutes}:${seconds}`;
-    },
     accuracy() {
-      return this.number_all_answers > 0
-        ? ((this.number_correct_answers / this.number_all_answers) * 100).toFixed(2)
-        : 0;
+      return this.number_all_answers === 0 ? 0 : (this.number_correct_answers / this.number_all_answers * 100).toFixed(2);
+    },
+    formattedTime() {
+      const minutes = Math.floor(this.elapsedTime / 60).toString().padStart(2, "0");
+      const seconds = (this.elapsedTime % 60).toString().padStart(2, "0");
+      return `${minutes}:${seconds}`;
     },
   },
   methods: {
-    startGame() {
-      this.currentView = 'test';
-      this.cards = this.generateCards();
-      this.matchedPairs = [];
-      this.number_correct_answers = 0;
-      this.remainingTime = 60;
-      this.timeElapsed = 0;
-      this.time = "00:00:00";
-      this.startTime = Date.now();
-      this.startTimer();
-    },
-
-    generateCards() {
-      const values = ['😊', '😂', '😍', '😎', '😜', '😢', '😱', '😈'];
-      const doubledValues = [...values, ...values];
-      return this.shuffle(doubledValues).map(value => ({ value, flipped: false, matched: false }));
-    },
-
     shuffle(array) {
       return array.sort(() => Math.random() - 0.5);
     },
-
-    startTimer() {
-      this.gameTimer = setInterval(() => {
-        if (this.remainingTime > 0) {
-          this.remainingTime--;
-          this.timeElapsed++;
-          this.time = this.formatTime(this.timeElapsed);
-        } else {
-          this.endGame();
-        }
-      }, 1000);
-    },
-
-    formatTime(seconds) {
-      const hours = Math.floor(seconds / 3600).toString().padStart(2, "0");
-      const minutes = Math.floor((seconds % 3600) / 60).toString().padStart(2, "0");
-      const sec = (seconds % 60).toString().padStart(2, "0");
-      return `${hours}:${minutes}:${sec}`;
-    },
-
-    flipCard(card) {
-      if (card.flipped || card.matched || this.flippedCards.length === 2) return;
-      card.flipped = true;
-      this.flippedCards.push(card);
-      if (this.flippedCards.length === 2) {
+    flipCard(index) {
+      if (this.lockBoard || this.cardStates[index] !== "?") return;
+      this.cardStates[index] = this.shuffledEmojis[index];
+      if (this.firstCardIndex === null) {
+        this.firstCardIndex = index;
+      } else {
+        this.secondCardIndex = index;
+        this.lockBoard = true;
         this.checkForMatch();
       }
     },
-
     checkForMatch() {
-      const [firstCard, secondCard] = this.flippedCards;
-      if (firstCard.value === secondCard.value) {
-        firstCard.matched = true;
-        secondCard.matched = true;
-        this.matchedPairs.push(firstCard);
-        this.number_correct_answers++;
-
-        if (this.number_correct_answers === this.number_all_answers) {
-          this.endGame();
-        }
+      if (this.shuffledEmojis[this.firstCardIndex] === this.shuffledEmojis[this.secondCardIndex]) {
+        this.disableCards();
       } else {
-        setTimeout(() => {
-          firstCard.flipped = false;
-          secondCard.flipped = false;
-        }, 1000);
+        this.unflipCards();
       }
-      this.flippedCards = [];
     },
-
-    endGame() {
-      clearInterval(this.gameTimer);
-      this.time = this.formatTime(this.timeElapsed);
-      this.currentView = 'result';
-      this.saveResults();
+    disableCards() {
+      this.matchedCards += 2;
+      this.number_correct_answers += 2;
+      this.resetBoard();
+      if (this.matchedCards === this.emojis.length) {
+        this.gameEnded = true;
+        clearInterval(this.timer);
+        this.saveResults();
+      }
     },
-
-    restartGame() {
-      this.currentView = 'start';
-      this.remainingTime = 60;
-      this.matchedPairs = [];
-      this.flippedCards = [];
+    unflipCards() {
+      setTimeout(() => {
+        this.cardStates[this.firstCardIndex] = "?";
+        this.cardStates[this.secondCardIndex] = "?";
+        this.resetBoard();
+      }, 1000);
     },
-
+    resetBoard() {
+      this.firstCardIndex = null;
+      this.secondCardIndex = null;
+      this.lockBoard = false;
+    },
+    startGame() {
+      this.matchedCards = 0;
+      this.cardStates = Array(this.emojis.length).fill("?");
+      this.shuffledEmojis = this.shuffle([...this.emojis]);
+      this.gameEnded = false;
+      this.number_correct_answers = 0;
+      this.elapsedTime = 0;
+      this.startTime = Date.now();
+      this.timer = setInterval(() => {
+        this.elapsedTime = Math.floor((Date.now() - this.startTime) / 1000);
+     }, 1000);
+    },
     async saveResults() {
       if (!this.authStore.user) {
-        alert("Пользователь не авторизован. Пожалуйста, войдите в систему.");
+        alert("Пользователь не авторизован. Войдите в систему.");
         return;
       }
-
-      const testId = 4;
-      const accuracyValue = parseFloat(this.accuracy);
-
       try {
-        const response = await fetch("http://127.0.0.1:8000/api/result/", {
+        const response = await fetch("https://svetasy.pythonanywhere.com/api/result/", {
           method: "POST",
           headers: {
             "Content-Type": "application/json",
             Authorization: `Bearer ${localStorage.getItem("token")}`,
           },
           body: JSON.stringify({
-            test: testId,
+            test: 4,
             user: this.authStore.user.id,
-            score_percentage: parseInt(accuracyValue, 10),
-            time: this.time,
+            accuracy: this.accuracy,
+            time: this.formattedTime,
             number_all_answers: this.number_all_answers,
             number_correct_answers: this.number_correct_answers,
-            accuracy: parseInt(accuracyValue, 10),
           }),
         });
-
+        const data = await response.json();
         if (response.ok) {
           alert("Результаты успешно сохранены!");
         } else {
-          const errorData = await response.json();
-          alert(errorData.detail || errorData.error || "Ошибка при сохранении результатов");
+          alert(data.detail || data.error || "Ошибка при сохранении");
         }
       } catch (error) {
         console.error("Ошибка при отправке результатов:", error);
-        alert("Произошла ошибка соединения с сервером");
+        alert("Ошибка соединения с сервером");
       }
     },
+  },
+  mounted() {
+    this.startGame();
   },
 };
 </script>
 
 <style scoped>
-.container {
-  text-align: center;
+.emoji {
+  font-size: 2em;
 }
-.cards-container {
-  display: flex;
-  flex-wrap: wrap;
-  justify-content: center;
-  gap: 10px;
-  margin-top: 20px;
-}
-.card {
-  width: 80px;
-  height: 80px;
-  background-color: #f0f0f0;
-  border-radius: 10px;
-  cursor: pointer;
-  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
-}
-.card-inner {
-  width: 100%;
-  height: 100%;
-  transition: transform 0.5s;
-  transform-style: preserve-3d;
-}
-.card.flipped .card-inner {
-  transform: rotateY(180deg);
-}
-.card-front, .card-back {
-  position: absolute;
-  width: 100%;
-  height: 100%;
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  font-size: 24px;
-  background-color: #fff;
-  backface-visibility: hidden;
-}
-.card-back {
-  transform: rotateY(180deg);
-}
-.controls {
+.end-message {
   margin-top: 20px;
 }
 </style>

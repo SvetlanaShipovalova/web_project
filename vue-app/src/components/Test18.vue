@@ -1,12 +1,16 @@
 <template>
   <Navbar />
   <div class="container mt-5 text-center">
-    <h2>Тест на внимательность</h2>
+    <h2>Тест на избирательность внимания</h2>
     <div id="app">
       <div v-if="!testStarted && !testFinished">
-        <h1 class="display-4">Найдите числа!</h1>
-        <p>Вам нужно найти 5 чисел среди 48 плиток. Удачи!</p>
-        <button class="btn btn-primary btn-lg" @click="startTest">Начать</button>
+        <p>
+          <strong>"Тест на внимательность"</strong> — это игра для развития концентрации и зрительной памяти.
+        </p>
+        <p>
+          <strong>Цель игры:</strong> Найти 5 заданных чисел среди 48 плиток как можно быстрее.
+        </p>
+        <button class="btn btn-primary btn-lg" @click="startTest">Начать тест</button>
       </div>
 
       <div v-else-if="testStarted">
@@ -38,10 +42,10 @@
         <p>⏳ Время выполнения: {{ formattedTime }}</p>
         <p>✅ Правильные ответы: {{ number_correct_answers }} из {{ number_all_answers }}</p>
         <p>🎯 Точность: {{ accuracy }}%</p>
-        <router-link to="/tests" class="btn btn-secondary mt-3">Назад к тестам</router-link>
       </div>
       </div>
     </div>
+    <router-link to="/tests" class="btn btn-secondary">Назад к тестам</router-link>
   </div>
 </template>
 
@@ -197,4 +201,3 @@ export default {
 <style scoped>
 /* Здесь можно добавить стили, если потребуется */
 </style>
-

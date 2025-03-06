@@ -1,10 +1,15 @@
 <template>
   <Navbar />
   <div class="container mt-5 text-center">
-    <h2>Тест на внимательность</h2>
+    <h2>Найдите неточность</h2>
     <div id="app">
       <div v-if="!testStarted && !testFinished">
-        <h1 class="display-4">Найдите лишний символ!</h1>
+        <p>
+          <strong>"Найдите неточность"</strong> — это игра для тренировки концентрации и зрительного восприятия.
+        </p>
+        <p>
+          <strong>Цель игры:</strong> Сравнить строки и найти лишний символ, выбрать его в приведённой таблице.
+        </p>
         <button class="btn btn-primary btn-lg" @click="startTest">Начать</button>
       </div>
 
@@ -37,6 +42,7 @@
         <router-link to="/tests" class="btn btn-secondary mt-3">Назад к тестам</router-link>
       </div>
     </div>
+    <router-link to="/tests" class="btn btn-secondary">Назад к тестам</router-link>
   </div>
 </template>
 
