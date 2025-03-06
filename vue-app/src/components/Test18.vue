@@ -4,9 +4,14 @@
     <h2>Тест на внимательность</h2>
     <div id="app">
       <div v-if="!testStarted && !testFinished">
-        <h1 class="display-4">Найдите числа!</h1>
-        <p>Вам нужно найти 5 чисел среди 48 плиток. Удачи!</p>
-        <button class="btn btn-primary btn-lg" @click="startTest">Начать</button>
+        <h1>Тест на внимательность</h1>
+        <p>
+          <strong>"Тест на внимательность"</strong> — это игра для развития концентрации и зрительной памяти.
+        </p>
+        <p>
+          <strong>Цель игры:</strong> Найти 5 заданных чисел среди 48 плиток как можно быстрее.
+        </p>
+        <button class="btn btn-primary btn-lg" @click="startTest">Начать тест</button>
       </div>
 
       <div v-else-if="testStarted">
