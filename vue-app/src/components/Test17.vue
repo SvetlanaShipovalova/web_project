@@ -15,7 +15,7 @@
       </div>
       
       <div v-else-if="testStarted && !testFinished">
-        <p>Раунд {{ round }} из 16</p>
+        <p>Раунд {{ round }} из 7</p> <!-- Изменено на 7 раундов -->
         <div class="color-container">
           <div class="color-box fixed" :style="{ backgroundColor: leftColor }"></div>
           <div
@@ -35,7 +35,7 @@
       
       <div v-if="testCompleted && !testFinished">
         <p>Вы правильно расположили {{ correctMovableColors }} из {{ movableColors.length }} оттенков!</p>
-        <button v-if="round < 16" class="btn btn-primary" @click="nextRound">Следующий раунд</button>
+        <button v-if="round < 7" class="btn btn-primary" @click="nextRound">Следующий раунд</button> <!-- Изменено на 7 раундов -->
         <button v-else class="btn btn-primary" @click="finishTest">Завершить тест</button>
       </div>
       
