@@ -23,6 +23,7 @@
             <h2>Тест завершён!</h2>
             <p>Ваш результат: {{ score }} из {{ totalRounds }}</p>
             <p>Время выполнения теста: {{ time }}</p>
+            <p>Точность выполнения: {{ accuracy }}%</p> <!-- Используем accuracy вместо score_percentage -->
             <button class="btn btn-secondary" @click="retryTest">Пройти тест еще раз</button>
           </div>
         </div>
@@ -35,7 +36,7 @@
 </template>
 
 <script>
-import { ref } from 'vue';
+import { ref, computed } from 'vue';
 import Navbar from "../view/Navbar.vue"; // Assuming Navbar.vue is in the same directory
 
 export default {
@@ -53,6 +54,11 @@ export default {
     const testStarted = ref(false);
     const time = ref("00:00:00");
     const startTime = ref(null);
+    const oddColorIndex = ref(-1); // Индекс лишнего цвета
+
+    const accuracy = computed(() => {
+      return ((score.value / totalRounds) * 100).toFixed(2); // Вычисляем точность выполнения
+    });
 
     const startTest = () => {
       testStarted.value = true;
@@ -67,31 +73,54 @@ export default {
     };
 
     const generateColorOptions = () => {
-      const colors = ["#FF5733", "#FFBD33", "#33FF57", "#33FFBD", "#3357FF", "#FF33A8"];
-      const randomColor = colors[Math.floor(Math.random() * colors.length)];
-      const similarColors = getSimilarColors(randomColor);
-      colorOptions.value = [...similarColors, randomColor].sort(() => Math.random() - 0.5);
+      const baseColor = getRandomColor();
+      const similarColors = getSimilarColors(baseColor, 3); // Генерируем 3 похожих цвета
+      const oddColor = getDifferentColor(baseColor); // Генерируем один явно отличающийся цвет
+      colorOptions.value = [...similarColors, oddColor].sort(() => Math.random() - 0.5);
+      oddColorIndex.value = colorOptions.value.indexOf(oddColor); // Сохраняем индекс лишнего цвета
     };
 
-    const getSimilarColors = (color) => {
+    const getRandomColor = () => {
+      return `#${Math.floor(Math.random() * 16777215).toString(16).padStart(6, '0')}`;
+    };
+
+    const getSimilarColors = (baseColor, count) => {
       const similarColors = [];
-      for (let i = 0; i < 3; i++) {
-        let newColor = color;
-        while (newColor === color) {
-          newColor = `#${Math.floor(Math.random() * 16777215).toString(16)}`;
-        }
-        similarColors.push(newColor);
+      for (let i = 0; i < count; i++) {
+        const color = adjustColor(baseColor, 30); // Немного изменяем базовый цвет
+        similarColors.push(color);
       }
       return similarColors;
     };
 
+    const getDifferentColor = (baseColor) => {
+      let differentColor;
+      do {
+        differentColor = getRandomColor();
+      } while (isSimilar(differentColor, baseColor, 100)); // Убедимся, что цвет действительно отличается
+      return differentColor;
+    };
+
+    const adjustColor = (color, amount) => {
+      let r = parseInt(color.slice(1, 3), 16);
+      let g = parseInt(color.slice(3, 5), 16);
+      let b = parseInt(color.slice(5, 7), 16);
+
+      r = Math.min(255, Math.max(0, r + amount));
+      g = Math.min(255, Math.max(0, g + amount));
+      b = Math.min(255, Math.max(0, b + amount));
+
+      return `#${r.toString(16).padStart(2, '0')}${g.toString(16).padStart(2, '0')}${b.toString(16).padStart(2, '0')}`;
+    };
+
     const checkAnswer = (color) => {
       selectedColor.value = color;
-      if (colorOptions.value.indexOf(color) === colorOptions.value.length - 1) {
+      const selectedIndex = colorOptions.value.indexOf(color);
+      if (selectedIndex === oddColorIndex.value) {
         feedback.value = "Правильно!";
         score.value++;
       } else {
-        feedback.value = "Неправильно! Лишний цвет: " + colorOptions.value[colorOptions.value.length - 1];
+        feedback.value = `Неправильно! Лишний цвет: ${colorOptions.value[oddColorIndex.value]}`;
       }
       currentRound.value++;
       if (currentRound.value < totalRounds) {
@@ -99,6 +128,18 @@ export default {
       } else {
         calculateResults();
       }
+    };
+
+    const isSimilar = (color1, color2, threshold) => {
+      const r1 = parseInt(color1.slice(1, 3), 16);
+      const g1 = parseInt(color1.slice(3, 5), 16);
+      const b1 = parseInt(color1.slice(5, 7), 16);
+      const r2 = parseInt(color2.slice(1, 3), 16);
+      const g2 = parseInt(color2.slice(3, 5), 16);
+      const b2 = parseInt(color2.slice(5, 7), 16);
+
+      const diff = Math.abs(r1 - r2) + Math.abs(g1 - g2) + Math.abs(b1 - b2);
+      return diff < threshold;
     };
 
     const calculateResults = () => {
@@ -128,7 +169,7 @@ export default {
           body: JSON.stringify({
             test: 20,
             user: authStore.value.user.id,
-            score_percentage: Math.round((score.value / totalRounds) * 100),
+            accuracy: parseFloat(accuracy.value), // Используем accuracy вместо score_percentage
             time: time.value,
             number_all_answers: totalRounds,
             number_correct_answers: score.value,
@@ -159,10 +200,10 @@ export default {
       feedback,
       testStarted,
       time,
+      accuracy, // Возвращаем accuracy для использования в шаблоне
       startTest,
       nextRound,
       generateColorOptions,
-      getSimilarColors,
       checkAnswer,
       calculateResults,
       formatTime,
