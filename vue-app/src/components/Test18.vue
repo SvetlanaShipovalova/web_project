@@ -4,12 +4,8 @@
     <h2>Тест на избирательность внимания</h2>
     <div id="app">
       <div v-if="!testStarted && !testFinished">
-        <p>
-          <strong>"Тест на внимательность"</strong> — это игра для развития концентрации и зрительной памяти.
-        </p>
-        <p>
-          <strong>Цель игры:</strong> Найти 5 заданных чисел среди 48 плиток как можно быстрее.
-        </p>
+        <p><strong>"Тест на внимательность"</strong> — это игра для развития концентрации и зрительной памяти.</p>
+        <p><strong>Цель игры:</strong> Найти 5 заданных чисел среди 48 плиток как можно быстрее. Сначала выберите число из 5 загаданных и потом выберите его среди 48 плиток, таким образом соберите все 5 пар чисел (загаданное и найденное)</p>
         <button class="btn btn-primary btn-lg" @click="startTest">Начать тест</button>
       </div>
 
@@ -37,12 +33,13 @@
           </div>
         </div>
         <button v-if="errors < 5" class="btn btn-warning" @click="finishTestEarly">Завершить тест</button>
-        <div v-else-if="testFinished">
+      </div>
+
+      <div v-if="testFinished">
         <h3 class="display-5">Тест завершен!</h3>
-        <p>⏳ Время выполнения: {{ formattedTime }}</p>
+        <p>⏳ Время выполнения: {{ formattedTimeSpent }}</p>
         <p>✅ Правильные ответы: {{ number_correct_answers }} из {{ number_all_answers }}</p>
         <p>🎯 Точность: {{ accuracy }}%</p>
-      </div>
       </div>
     </div>
     <router-link to="/tests" class="btn btn-secondary">Назад к тестам</router-link>
@@ -65,7 +62,9 @@ export default {
     return {
       testStarted: false,
       testFinished: false,
-      timeLeft: 60,
+      initialTime: 120, // Установлено время на 2 минуты (120 секунд)
+      timeLeft: 120, // Установлено время на 2 минуты (120 секунд)
+      time: 0, // Время выполнения
       timer: null,
       targetNumbers: [],
       gridNumbers: [],
@@ -81,6 +80,11 @@ export default {
     formattedTime() {
       const minutes = Math.floor(this.timeLeft / 60);
       const seconds = this.timeLeft % 60;
+      return `${minutes.toString().padStart(2, "0")}:${seconds.toString().padStart(2, "0")}`;
+    },
+    formattedTimeSpent() {
+      const minutes = Math.floor(this.time / 60);
+      const seconds = this.time % 60;
       return `${minutes.toString().padStart(2, "0")}:${seconds.toString().padStart(2, "0")}`;
     },
     accuracy() {
@@ -101,14 +105,16 @@ export default {
       this.correctIndices = [];
       this.incorrectIndices = [];
       this.errors = 0;
-      this.timeLeft = 60; // Сброс времени
+      this.timeLeft = this.initialTime;
+      this.time = 0; // Обнуляем затраченное время
     },
     startTimer() {
       this.timer = setInterval(() => {
         if (this.timeLeft > 0) {
           this.timeLeft--;
+          this.time = this.initialTime - this.timeLeft; // Записываем затраченное время
         } else {
-          this.finishTest(); // Завершение теста при истечении времени
+          this.finishTest();
         }
       }, 1000);
     },
@@ -122,7 +128,7 @@ export default {
     generateGridNumbers(totalCount, targetNumbers) {
       const numbers = [...targetNumbers];
       while (numbers.length < totalCount) {
-        const randomNum = Math.floor(100         + Math.random() * 900);
+        const randomNum = Math.floor(100 + Math.random() * 900);
         if (!numbers.includes(randomNum)) {
           numbers.push(randomNum);
         }
@@ -130,33 +136,41 @@ export default {
       return numbers.sort(() => Math.random() - 0.5);
     },
     selectNumber(num) {
-      // Устанавливаем выбранное число
       this.selectedNumber = num;
     },
     placeNumber(num, index) {
-      if (this.selectedNumber === num) {
-        // Если выбранное число совпадает с нажимаемой плиткой
-        this.correctIndices.push(index);
-        this.number_correct_answers++;
-        this.selectedNumber = null; // Сбрасываем выбранное число
+      if (this.selectedNumber === null) {
+        alert("Сначала выберите число из верхнего ряда!");
+        return;
+      }
+
+      if (this.targetNumbers.includes(this.selectedNumber)) {
+        if (num === this.selectedNumber && !this.correctIndices.includes(index)) {
+          this.correctIndices.push(index);
+          this.number_correct_answers++;
+        }
+        this.selectedNumber = null; // Сбрасываем выбранное число после проверки
       } else {
-        // Если выбрали неверное число
-        this.incorrectIndices.push(index);
-        this.errors++;
-        if (this.errors >= 5) {
-          this.finishTest(); // Завершаем тест, если ошибки больше 5
+        if (!this.incorrectIndices.includes(index)) {
+          this.incorrectIndices.push(index);
+          this.errors++;
+          if (this.errors >= 5) {
+            this.finishTest();
+          }
         }
       }
     },
     finishTest() {
       this.testFinished = true;
-      clearInterval(this.timer); // Останавливаем таймер
-      this.saveResults(); // Сохраняем результаты
+      clearInterval(this.timer);
+      this.time = this.initialTime - this.timeLeft; // Фиксируем затраченное время
+      this.saveResults();
     },
     finishTestEarly() {
       this.testFinished = true;
-      clearInterval(this.timer); // Останавливаем таймер
-      this.saveResults(); // Сохраняем результаты
+      clearInterval(this.timer);
+      this.time = this.initialTime - this.timeLeft;
+      this.saveResults();
     },
     async saveResults() {
       if (!this.authStore.user) {
@@ -171,12 +185,12 @@ export default {
             Authorization: `Bearer ${localStorage.getItem("token")}`,
           },
           body: JSON.stringify({
-            test: 18, // ID теста
+            test: 18,
             user: this.authStore.user.id,
             score_percentage: Math.round(this.accuracy),
-            time: this.formattedTime, // Время выполнения
-            number_all_answers: this.number_all_answers, // Всегда 5
-            number_correct_answers: this.number_correct_answers, // Сколько правильно
+            time: this.time, // Отправляем затраченное время в секундах
+            number_all_answers: this.number_all_answers,
+            number_correct_answers: this.number_correct_answers,
           }),
         });
 
@@ -184,7 +198,6 @@ export default {
           alert("Результаты успешно сохранены!");
         } else {
           const errorData = await response.json();
-          console.error("Ошибка сервера:", errorData);
           alert(errorData.error || "Ошибка при сохранении результатов");
         }
       } catch (error) {
@@ -193,11 +206,11 @@ export default {
     },
   },
   beforeUnmount() {
-    clearInterval(this.timer); // Останавливаем таймер при размонтировании компонента
+    clearInterval(this.timer);
   },
 };
 </script>
 
 <style scoped>
-/* Здесь можно добавить стили, если потребуется */
+/* Можно добавить стили */
 </style>
