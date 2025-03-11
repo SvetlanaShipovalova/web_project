@@ -5,17 +5,12 @@
     <div id="app">
       <div v-if="!testStarted && !testFinished">
         <h1>Тест на цветовую последовательность</h1>
-        <p>
-          <strong>"Тест на цветовую последовательность"</strong> — это игра для тренировки восприятия оттенков и цветового восприятия.
-        </p>
-        <p>
-          <strong>Цель игры:</strong> Перетащить и упорядочить ящики с оттенками так, чтобы цвета плавно переходили от одного к другому.
-        </p>
+        <p>Перетащите и отпустите ящики, чтобы расположить оттенки в правильной последовательности.</p>
         <button class="start-button btn btn-primary" @click="startTest">Начать тест</button>
       </div>
       
       <div v-else-if="testStarted && !testFinished">
-        <p>Раунд {{ round }} из 7</p> <!-- Изменено на 7 раундов -->
+        <p>Раунд {{ round }} из 7</p>
         <div class="color-container">
           <div class="color-box fixed" :style="{ backgroundColor: leftColor }"></div>
           <div
@@ -35,7 +30,7 @@
       
       <div v-if="testCompleted && !testFinished">
         <p>Вы правильно расположили {{ correctMovableColors }} из {{ movableColors.length }} оттенков!</p>
-        <button v-if="round < 7" class="btn btn-primary" @click="nextRound">Следующий раунд</button> <!-- Изменено на 7 раундов -->
+        <button v-if="round < 7" class="btn btn-primary" @click="nextRound">Следующий раунд</button>
         <button v-else class="btn btn-primary" @click="finishTest">Завершить тест</button>
       </div>
       

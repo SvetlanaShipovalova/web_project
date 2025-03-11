@@ -15,6 +15,7 @@
 
       <div v-else-if="testStarted">
         <p class="h5">Сравните строки и найдите лишний символ!</p>
+        <p class="h5">Оставшееся время: {{ formattedTime }}</p> <!-- Отображение обратного отсчёта -->
         <div class="row mb-4">
           <div class="col-12">
             <h4 class="display-5">{{ string1 }}</h4>
@@ -34,9 +35,9 @@
         </div>
       </div>
 
-      <div v-else-if="testFinished">
+      <div v-if="testFinished">
         <h3 class="display-5">Тест завершен!</h3>
-        <p>⏳ Время выполнения: {{ formattedTime }}</p>
+        <p>⏳ Время выполнения: {{ formattedTimeSpent }}</p>
         <p>✅ Правильные ответы: {{ number_correct_answers }} из {{ number_all_answers }}</p>
         <p>🎯 Точность: {{ accuracy }}%</p>
         <router-link to="/tests" class="btn btn-secondary mt-3">Назад к тестам</router-link>
@@ -65,7 +66,9 @@ export default {
       selectedChar: null,
       number_all_answers: 1,
       number_correct_answers: 0,
-      timeLeft: 60,
+      initialTime: 60, // Начальное время (60 секунд)
+      timeLeft: 60, // Оставшееся время
+      time: 0, // Время выполнения
       timer: null,
     };
   },
@@ -73,6 +76,11 @@ export default {
     formattedTime() {
       const minutes = Math.floor(this.timeLeft / 60);
       const seconds = this.timeLeft % 60;
+      return `${minutes.toString().padStart(2, "0")}:${seconds.toString().padStart(2, "0")}`;
+    },
+    formattedTimeSpent() {
+      const minutes = Math.floor(this.time / 60);
+      const seconds = this.time % 60;
       return `${minutes.toString().padStart(2, "0")}:${seconds.toString().padStart(2, "0")}`;
     },
     accuracy() {
@@ -83,6 +91,8 @@ export default {
     startTest() {
       this.testStarted = true;
       this.testFinished = false;
+      this.timeLeft = this.initialTime; // Сбрасываем оставшееся время
+      this.time = 0; // Сбрасываем затраченное время
       this.generateStrings();
       this.startTimer();
     },
@@ -91,13 +101,13 @@ export default {
       const array = symbols.split('');
       this.extraChar = array[Math.floor(Math.random() * array.length)];
       
-      // Create two strings where one has an extra character
-      this.string1 = this.shuffle(array.slice()).join('') + this.extraChar; // String with extra character
-      this.string2 = this.shuffle(array.slice()).join(''); // String without extra character
+      // Создаем две строки, где одна строка содержит лишний символ
+      this.string1 = this.shuffle(array.slice()).join('') + this.extraChar; // Строка с лишним символом
+      this.string2 = this.shuffle(array.slice()).join(''); // Строка без лишнего символа
 
-      // Prepare all characters for selection
+      // Подготавливаем все символы для выбора
       this.allCharacters = [...new Set(this.string1.split('').concat(this.string2.split('')))];
-      this.allCharacters = this.shuffle(this.allCharacters); // Shuffle for random display
+      this.allCharacters = this.shuffle(this.allCharacters); // Перемешиваем для случайного отображения
     },
     shuffle(array) {
       for (let i = array.length - 1; i > 0; i--) {
@@ -110,12 +120,16 @@ export default {
       this.selectedChar = char;
       if (char === this.extraChar) {
          this.number_correct_answers++;
+         alert("Правильно!");
+      } else {
+        alert(`Неправильно! Лишний символ: ${this.extraChar}`);
       }
       this.finishTest(); // Завершение теста после выбора
     },
     finishTest() {
       this.testFinished = true;
       clearInterval(this.timer); // Останавливаем таймер
+      this.time = this.initialTime - this.timeLeft; // Фиксируем затраченное время
       this.saveResults(); // Сохраняем результаты
     },
     startTimer() {
@@ -144,7 +158,7 @@ export default {
             test: 18, // ID теста
             user: authStore.user.id,
             score_percentage: Math.round(this.accuracy),
-            time: this.formattedTime, // Время выполнения
+            time: this.time, // Время выполнения в секундах
             number_all_answers: this.number_all_answers, // Всегда 1
             number_correct_answers: this.number_correct_answers, // Сколько правильно
           }),

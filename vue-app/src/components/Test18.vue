@@ -16,7 +16,8 @@
             v-for="(num, index) in targetNumbers"
             :key="index"
             class="col-2 border d-flex justify-content-center align-items-center p-3"
-            @click="selectNumber(num)"
+            :class="{'bg-success': correctTargetIndices.includes(index)}"
+            @click="selectNumber(num, index)"
           >
             {{ num }}
           </div>
@@ -69,9 +70,11 @@ export default {
       targetNumbers: [],
       gridNumbers: [],
       selectedNumber: null,
-      correctIndices: [],
-      incorrectIndices: [],
-      errors: 0,
+      selectedTargetIndex: null, // Индекс выбранного числа в верхнем ряду
+      correctIndices: [], // Индексы правильно угаданных чисел в сетке
+      correctTargetIndices: [], // Индексы правильно угаданных чисел в верхнем ряду
+      incorrectIndices: [], // Индексы неправильно угаданных чисел
+      errors: 0, // Количество ошибок
       number_all_answers: 5,
       number_correct_answers: 0,
     };
@@ -102,7 +105,9 @@ export default {
     },
     resetTestState() {
       this.selectedNumber = null;
+      this.selectedTargetIndex = null;
       this.correctIndices = [];
+      this.correctTargetIndices = [];
       this.incorrectIndices = [];
       this.errors = 0;
       this.timeLeft = this.initialTime;
@@ -135,8 +140,9 @@ export default {
       }
       return numbers.sort(() => Math.random() - 0.5);
     },
-    selectNumber(num) {
+    selectNumber(num, index) {
       this.selectedNumber = num;
+      this.selectedTargetIndex = index; // Сохраняем индекс выбранного числа в верхнем ряду
     },
     placeNumber(num, index) {
       if (this.selectedNumber === null) {
@@ -146,10 +152,12 @@ export default {
 
       if (this.targetNumbers.includes(this.selectedNumber)) {
         if (num === this.selectedNumber && !this.correctIndices.includes(index)) {
-          this.correctIndices.push(index);
+          this.correctIndices.push(index); // Отмечаем индекс правильно угаданного числа в сетке
+          this.correctTargetIndices.push(this.selectedTargetIndex); // Отмечаем индекс правильно угаданного числа в верхнем ряду
           this.number_correct_answers++;
         }
         this.selectedNumber = null; // Сбрасываем выбранное число после проверки
+        this.selectedTargetIndex = null; // Сбрасываем индекс выбранного числа в верхнем ряду
       } else {
         if (!this.incorrectIndices.includes(index)) {
           this.incorrectIndices.push(index);
