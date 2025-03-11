@@ -1,17 +1,26 @@
 <template>
   <Navbar />
   <div class="container mt-5 text-center">
-    <h2>Тест на внимательность</h2>
+    <h2>Найдите неточность</h2>
     <div id="app">
       <div v-if="!testStarted && !testFinished">
+<<<<<<< HEAD
+        <p>
+          <strong>"Найдите неточность"</strong> — это игра для тренировки концентрации и зрительного восприятия.
+=======
         <h1>Тест на внимательность</h1>
         <p>
           <strong>"Тест на внимательность"</strong> — это игра для тренировки концентрации и зрительного восприятия.
+>>>>>>> d56161a91d3fcd9674f26ad66010e360c26bbd84
         </p>
         <p>
           <strong>Цель игры:</strong> Сравнить строки и найти лишний символ, выбрать его в приведённой таблице.
         </p>
+<<<<<<< HEAD
+        <button class="btn btn-primary btn-lg" @click="startTest">Начать</button>
+=======
         <button class="btn btn-primary btn-lg" @click="startTest">Начать тест</button>
+>>>>>>> d56161a91d3fcd9674f26ad66010e360c26bbd84
       </div>
 
       <div v-else-if="testStarted">
@@ -43,6 +52,7 @@
         <router-link to="/tests" class="btn btn-secondary mt-3">Назад к тестам</router-link>
       </div>
     </div>
+    <router-link to="/tests" class="btn btn-secondary">Назад к тестам</router-link>
   </div>
 </template>
 

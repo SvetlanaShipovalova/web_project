@@ -1,47 +1,33 @@
-<template> 
-  <Navbar />
+<template>
+<Navbar />
   <div class="container mt-5 text-center">
-    <h2>{{ $route.params.name }}</h2>
-    <div id="app">
-      <!-- Начальный экран -->
-      <div v-if="!gameStarted && !gameEnded">
-        <h1>Тест на память</h1>
-        <p>
-          <strong>Игра:</strong> "Тест на память" — это когнитивная игра, направленная на развитие зрительной памяти и концентрации.
-        </p>
-        <p>
+    <h2>Найди пары смайлов!</h2>
+    <p>
           <strong>Цель игры:</strong> Нажмите "Начать игру", чтобы увидеть сетку закрытых карточек. Кликайте по ним, чтобы открывать смайлики. </p>
           <p>Если изображения совпадают, карточки остаются открытыми, если нет – они закроются через секунду. Игра продолжается, пока не будут найдены все пары. В конце отображаются время прохождения, количество найденных пар и точность.
         </p>
-        <button class="start-button btn btn-primary" @click="startGame">Начать игру</button>
+    <div class="row mt-4">
+      <div 
+        v-for="(emoji, index) in shuffledEmojis" 
+        :key="index" 
+        class="col-2 card m-2 p-4 bg-light text-center" 
+        @click="flipCard(index)"
+      >
+        <span class="emoji" style="font-size: 2em">{{ cardStates[index] }}</span>
       </div>
-
-      <!-- Игровой экран -->
-      <div v-else-if="gameStarted">
-        <p>Время: {{ formattedTime }}</p>
-        <p>Найденные пары: {{ number_correct_answers }} / {{ number_all_answers }}</p>
-        <div class="row mt-4">
-          <div 
-            v-for="(emoji, index) in shuffledEmojis" 
-            :key="index" 
-            class="col-2 card m-2 p-4 bg-light text-center" 
-            @click="flipCard(index)"
-          >
-            <span class="emoji" style="font-size: 2em">{{ cardStates[index] }}</span>
-          </div>
-        </div>
-      </div>
-
-      <!-- Финальный экран -->
-      <div v-if="gameEnded" class="end-message">
-        <h3>Игра завершена!</h3>
-        <p>Общее время: {{ formattedTime }}</p>
-        <p>Правильные ответы: {{ number_correct_answers }} / {{ number_all_answers }}</p>
-        <p>Точность: {{ accuracy }}%</p>
-        <button class="btn btn-success" @click="restartGame">Пройти снова</button>
-      </div>
-      <router-link to="/tests" class="btn btn-secondary mt-3">Назад к тестам</router-link>
     </div>
+    <button class="btn btn-primary mt-4" @click="startGame">Начать заново</button>
+    
+    <div v-if="gameEnded" class="end-message mt-4">
+      <h3>Игра завершена!</h3>
+      <p>Правильные ответы: {{ number_correct_answers }} / {{ number_all_answers }}</p>
+      <p>Точность: {{ accuracy }}%</p>
+      <p>Время выполнения: {{ formattedTime }}</p>
+    </div>
+    
+    <router-link to="/tests" class="btn btn-secondary">
+      Назад к тестам
+    </router-link>
   </div>
 </template>
 
@@ -61,9 +47,15 @@ export default {
       secondCardIndex: null,
       lockBoard: false,
       matchedCards: 0,
+<<<<<<< HEAD
+      authStore: useAuthStore(),
+      number_all_answers: 20,
+      number_correct_answers: 0,
+=======
       number_all_answers: 10,
       number_correct_answers: 0,
       gameStarted: false,
+>>>>>>> d56161a91d3fcd9674f26ad66010e360c26bbd84
       gameEnded: false,
       startTime: null,
       elapsedTime: 0,
@@ -104,6 +96,71 @@ export default {
     },
     disableCards() {
       this.matchedCards += 2;
+<<<<<<< HEAD
+      this.number_correct_answers += 2;
+      this.resetBoard();
+      if (this.matchedCards === this.emojis.length) {
+        this.gameEnded = true;
+        clearInterval(this.timer);
+        this.saveResults();
+      }
+    },
+    unflipCards() {
+      setTimeout(() => {
+        this.cardStates[this.firstCardIndex] = "?";
+        this.cardStates[this.secondCardIndex] = "?";
+        this.resetBoard();
+      }, 1000);
+    },
+    resetBoard() {
+      this.firstCardIndex = null;
+      this.secondCardIndex = null;
+      this.lockBoard = false;
+    },
+    startGame() {
+      this.matchedCards = 0;
+      this.cardStates = Array(this.emojis.length).fill("?");
+      this.shuffledEmojis = this.shuffle([...this.emojis]);
+      this.gameEnded = false;
+      this.number_correct_answers = 0;
+      this.elapsedTime = 0;
+      this.startTime = Date.now();
+      this.timer = setInterval(() => {
+        this.elapsedTime = Math.floor((Date.now() - this.startTime) / 1000);
+     }, 1000);
+    },
+    async saveResults() {
+      if (!this.authStore.user) {
+        alert("Пользователь не авторизован. Войдите в систему.");
+        return;
+      }
+      try {
+        const response = await fetch("https://svetasy.pythonanywhere.com/api/result/", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${localStorage.getItem("token")}`,
+          },
+          body: JSON.stringify({
+            test: 4,
+            user: this.authStore.user.id,
+            accuracy: this.accuracy,
+            time: this.formattedTime,
+            number_all_answers: this.number_all_answers,
+            number_correct_answers: this.number_correct_answers,
+          }),
+        });
+        const data = await response.json();
+        if (response.ok) {
+          alert("Результаты успешно сохранены!");
+        } else {
+          alert(data.detail || data.error || "Ошибка при сохранении");
+        }
+      } catch (error) {
+        console.error("Ошибка при отправке результатов:", error);
+        alert("Ошибка соединения с сервером");
+      }
+=======
       this.number_correct_answers += 1;
       this.resetBoard();
       if (this.matchedCards === this.emojis.length) {
@@ -142,7 +199,11 @@ export default {
     },
     restartGame() {
       this.startGame();
+>>>>>>> d56161a91d3fcd9674f26ad66010e360c26bbd84
     },
+  },
+  mounted() {
+    this.startGame();
   },
 };
 </script>

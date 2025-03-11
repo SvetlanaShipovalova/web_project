@@ -1,10 +1,9 @@
 <template>
   <Navbar />
   <div class="container mt-5 text-center">
-    <h2>Тест на внимательность</h2>
+    <h2>Тест на избирательность внимания</h2>
     <div id="app">
       <div v-if="!testStarted && !testFinished">
-        <h1>Тест на внимательность</h1>
         <p>
           <strong>"Тест на внимательность"</strong> — это игра для развития концентрации и зрительной памяти.
         </p>
@@ -43,10 +42,10 @@
         <p>⏳ Время выполнения: {{ formattedTime }}</p>
         <p>✅ Правильные ответы: {{ number_correct_answers }} из {{ number_all_answers }}</p>
         <p>🎯 Точность: {{ accuracy }}%</p>
-        <router-link to="/tests" class="btn btn-secondary mt-3">Назад к тестам</router-link>
       </div>
       </div>
     </div>
+    <router-link to="/tests" class="btn btn-secondary">Назад к тестам</router-link>
   </div>
 </template>
 
@@ -202,4 +201,3 @@ export default {
 <style scoped>
 /* Здесь можно добавить стили, если потребуется */
 </style>
-

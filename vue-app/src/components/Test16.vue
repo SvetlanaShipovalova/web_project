@@ -1,265 +1,198 @@
 <template>
   <Navbar />
   <div class="container mt-5 text-center">
-    <div class="color-blindness-test">
-      <h2>{{ $route.params.name }}</h2>
-
-      <div v-if="!testStarted && !testCompleted">
-        <h1>Тест на определение лишнего цвета</h1>
-        <p>
-          <strong>"Тест на цветовую последовательность"</strong> — это игра для развития цветового восприятия и внимания.
-        </p>
-        <p>
-          <strong>Цель игры:</strong> Найти и выбрать цвет, который не вписывается в предложенный ряд.
-        </p>
-        <button class="start-button btn btn-primary" @click="startTest">Начать тест</button>
-      </div>
-
-      <div v-else-if="testStarted && !testCompleted">
-        <p>Вопрос {{ currentQuestionIndex + 1 }} из {{ number_all_answers }}</p>
-        <img :src="currentQuestion.image" alt="Тест на цветовое зрение" />
-        <div class="answers">
-          <button
-            v-for="(option, index) in currentQuestion.options"
-            :key="index"
-            class="btn btn-outline-primary mx-1"
-            @click="checkAnswer(option)"
-          >
-            {{ option }}
-          </button>
+    <h2>{{ $route.params.name }}</h2>
+    <div id="app">
+      <div class="container">
+        <h2 v-if="!testStarted">Тест на определение лишнего цвета</h2>
+        <p>Цель игры: Найти и выбрать цвет, который не вписывается в предложенный ряд.</p>
+        <div v-if="testStarted">
+          <div v-if="currentRound < totalRounds">
+            <h3>Раунд {{ currentRound + 1 }}</h3>
+            <div class="row">
+              <div v-for="color in colorOptions" :key="color" class="col-3">
+                <div
+                  :style="{ backgroundColor: color, height: '80px', border: '2px solid #000', cursor: 'pointer' }"
+                  @click="checkAnswer(color)"
+                ></div>
+              </div>
+            </div>
+            <p v-if="selectedColor">{{ feedback }}</p>
+          </div>
+          <div v-else>
+            <h2>Тест завершён!</h2>
+            <p>Ваш результат: {{ score }} из {{ totalRounds }}</p>
+            <p>Время выполнения теста: {{ time }}</p>
+            <button class="btn btn-secondary" @click="retryTest">Пройти тест еще раз</button>
+          </div>
         </div>
+        <button v-else class="btn btn-primary" @click="startTest">Играть</button>
+        <br />
+        <router-link to="/tests" class="btn btn-secondary">Назад к тестам</router-link>
       </div>
-
-      <div v-if="testCompleted">
-        <p>Ваш результат: {{ number_correct_answers }} из {{ number_all_answers }}</p>
-        <p>Точность: {{ accuracy }}%</p>
-        <p>Время выполнения: {{ time }}</p>
-        <button class="btn btn-secondary" @click="resetTest">Пройти заново</button>
-      </div>
-      <router-link to="/tests" class="btn btn-secondary">Назад к тестам</router-link>
     </div>
   </div>
 </template>
 
 <script>
-import Navbar from "../view/Navbar.vue";
-import { useAuthStore } from '../store/authStore'; // Импортируем authStore
-import triangleCircle from '../assets/test_res/triangleCircle.png';
-import img96 from '../assets/test_res/96.png';
-import img13 from '../assets/test_res/13.png';
-import img95 from '../assets/test_res/95.png';
-import triangleCircle3 from '../assets/test_res/triangleCircle(3).png';
-import img9 from '../assets/test_res/9.png';
-import img132 from '../assets/test_res/13(2).png';
-import img66 from '../assets/test_res/66.png';
-import triangleCircle2 from '../assets/test_res/triangleCircle(2).png';
-import img962 from '../assets/test_res/96(2).png';
-import triangleCircle5 from '../assets/test_res/triangleCircle(5).png';
-import img36 from '../assets/test_res/36.png';
-import img136 from '../assets/test_res/136.png';
-import triangleCircle4 from '../assets/test_res/triangleCircle(4).png';
-import img30 from '../assets/test_res/30.png';
-import img92 from '../assets/test_res/9(2).png';
+import { ref } from 'vue';
+import Navbar from "../view/Navbar.vue"; // Assuming Navbar.vue is in the same directory
 
 export default {
-  components: { Navbar },
+  components: {
+    Navbar,
+  },
   setup() {
-    const authStore = useAuthStore();
-    return { authStore };
-  },
-  data() {
-    return {
-      testStarted: false,
-      testCompleted: false,
-      number_correct_answers: 0, // Количество правильных ответов
-      number_all_answers: 0, // Всего вопросов
-      currentQuestionIndex: 0,
-      startTime: null,
-      timeElapsed: 0,
-      time: "00:00:00", // Форматированное время
-      timer: null,
-      questions: [
-        {
-          image: triangleCircle,
-          correctAnswer: "Треугольник и круг",
-          options: ["Треугольник", "Треугольник и круг", "Круг", "Ничего"],
-        },
-        {
-          image: img96,
-          correctAnswer: "96",
-          options: ["6", "Ничего", "9", "96"],
-        },
-        {
-          image: img13,
-          correctAnswer: "13",
-          options: ["9", "1", "13", "5"],
-        },
-        {
-          image: img95,
-          correctAnswer: "95",
-          options: ["95", "Ничего", "9", "5"],
-        },
-        {
-          image: triangleCircle3,
-          correctAnswer: "Треугольник и круг",
-          options: ["Ничего", "Круг", "Треугольник", "Треугольник и круг"],
-        },
-        {
-          image: img9,
-          correctAnswer: "9",
-          options: ["6", "8", "9", "Ничего"],
-        },
-        {
-          image: img132,
-          correctAnswer: "13",
-          options: ["1", "13", "Ничего", "3"],
-        },
-        {
-          image: img66,
-          correctAnswer: "66",
-          options: ["9", "66", "6", "Ничего"],
-        },
-        {
-          image: triangleCircle2,
-          correctAnswer: "Треугольник и круг",
-          options: ["Ничего", "Круг", "Треугольник", "Треугольник и круг"],
-        },
-        {
-          image: img962,
-          correctAnswer: "96",
-          options: ["96", "Ничего", "9", "6"],
-        },
-        {
-          image: triangleCircle5,
-          correctAnswer: "Треугольник и круг",
-          options: ["Ничего", "Треугольник", "Круг", "Треугольник и круг"],
-        },
-        {
-          image: img36,
-          correctAnswer: "36",
-          options: ["3", "6", "Ничего", "36"],
-        },
-        {
-          image: img136,
-          correctAnswer: "136",
-          options: ["136", "66", "68", "69"],
-        },
-        {
-          image: triangleCircle4,
-          correctAnswer: "Треугольник и круг",
-          options: ["Треугольник и квадрат", "Треугольник и круг", "Два треугольника и квадрат", "Ничего"],
-        },
-        {
-          image: img962,
-          correctAnswer: "96",
-          options: ["Ничего", "6", "9", "96"],
-        },
-        {
-          image: img30,
-          correctAnswer: "30",
-          options: ["6", "10", "30", "Ничего"],
-        },
-        {
-          image: img92,
-          correctAnswer: "9",
-          options: ["0", "9", "Ничего", "2"],
-        },
-      ],
+    const authStore = ref({ user: null }); // Replace with actual auth store logic
+    const totalRounds = 6;
+    const currentRound = ref(0);
+    const score = ref(0);
+    const colorOptions = ref([]);
+    const selectedColor = ref(null);
+    const feedback = ref("");
+    const testStarted = ref(false);
+    const time = ref("00:00:00");
+    const startTime = ref(null);
+
+    const startTest = () => {
+      testStarted.value = true;
+      startTime.value = Date.now();
+      nextRound();
     };
-  },
-  computed: {
-    currentQuestion() {
-      return this.questions[this.currentQuestionIndex];
-    },
-    accuracy() {
-      return this.number_all_answers > 0
-        ? ((this.number_correct_answers / this.number_all_answers) * 100).toFixed(2)
-        : "0.00";
-    },
-  },
-  methods: {
-    formatTime(seconds) {
-      const hours = Math.floor(seconds / 3600).toString().padStart(2, "0");
-      const minutes = Math.floor((seconds % 3600) / 60).toString().padStart(2, "0");
-      const sec = (seconds % 60).toString().padStart(2, "0");
-      return `${hours}:${minutes}:${sec}`;
-    },
-    startTest() {
-      this.testStarted = true;
-      this.testCompleted = false;
-      this.number_correct_answers = 0;
-      this.number_all_answers = this.questions.length;
-      this.currentQuestionIndex = 0;
-      this.timeElapsed = 0;
-      this.startTime = Date.now();
-      this.startTimer();
-    },
-    startTimer() {
-      this.timer = setInterval(() => {
-        this.timeElapsed = Math.floor((Date.now() - this.startTime) / 1000);
-      }, 1000);
-    },
-    checkAnswer(option) {
-      if (option === this.currentQuestion.correctAnswer) {
-        this.number_correct_answers++;
+
+    const nextRound = () => {
+      selectedColor.value = null;
+      feedback.value = "";
+      generateColorOptions();
+    };
+
+    const generateColorOptions = () => {
+      const colors = ["#FF5733", "#FFBD33", "#33FF57", "#33FFBD", "#3357FF", "#FF33A8"];
+      const randomColor = colors[Math.floor(Math.random() * colors.length)];
+      const similarColors = getSimilarColors(randomColor);
+      colorOptions.value = [...similarColors, randomColor].sort(() => Math.random() - 0.5);
+    };
+
+    const getSimilarColors = (color) => {
+      const similarColors = [];
+      for (let i = 0; i < 3; i++) {
+        let newColor = color;
+        while (newColor === color) {
+          newColor = `#${Math.floor(Math.random() * 16777215).toString(16)}`;
+        }
+        similarColors.push(newColor);
       }
-      if (this.currentQuestionIndex < this.number_all_answers - 1) {
-        this.currentQuestionIndex++;
+      return similarColors;
+    };
+
+    const checkAnswer = (color) => {
+      selectedColor.value = color;
+      if (colorOptions.value.indexOf(color) === colorOptions.value.length - 1) {
+        feedback.value = "Правильно!";
+        score.value++;
       } else {
-        this.endTest();
+        feedback.value = "Неправильно! Лишний цвет: " + colorOptions.value[colorOptions.value.length - 1];
       }
-    },
-    endTest() {
-      clearInterval(this.timer);
-      this.testCompleted = true;
-      this.time = this.formatTime(this.timeElapsed);
-      this.saveResults();
-    },
-    resetTest() {
-      this.testStarted = false;
-      this.testCompleted = false;
-      this.timeElapsed = 0;
-      this.time = "00:00:00";
-      clearInterval(this.timer);
-    },
-    async saveResults() {
-      if (!this.authStore.user) {
+      currentRound.value++;
+      if (currentRound.value < totalRounds) {
+        nextRound();
+      } else {
+        calculateResults();
+      }
+    };
+
+    const calculateResults = () => {
+      const elapsedTime = Math.floor((Date.now() - startTime.value) / 1000);
+      time.value = formatTime(elapsedTime);
+      saveResults();
+    };
+
+    const formatTime = (seconds) => {
+      const minutes = String(Math.floor(seconds / 60)).padStart(2, "0");
+      const remainingSeconds = String(seconds % 60).padStart(2, "0");
+      return `00:${minutes}:${remainingSeconds}`;
+    };
+
+    const saveResults = async () => {
+      if (!authStore.value.user) {
         alert("Пользователь не авторизован. Войдите в систему.");
         return;
       }
-
       try {
-        const response = await fetch("http://127.0.0.1:8000/api/result/", {
+        await fetch("https://svetasy.pythonanywhere.com/api/result/", {
           method: "POST",
           headers: {
             "Content-Type": "application/json",
             Authorization: `Bearer ${localStorage.getItem("token")}`,
           },
           body: JSON.stringify({
-            test: 16, // ID теста
-            user: this.authStore.user.id,
-            score_percentage: Math.round(this.accuracy),
-            time: this.time, // Сохраняем итоговое время
-            number_all_answers: this.number_all_answers,
-            number_correct_answers: this.number_correct_answers,
+            test: 20,
+            user: authStore.value.user.id,
+            score_percentage: Math.round((score.value / totalRounds) * 100),
+            time: time.value,
+            number_all_answers: totalRounds,
+            number_correct_answers: score.value,
           }),
         });
-
-        if (response.ok) {
-          alert("Результаты успешно сохранены!");
-        } else {
-          const errorData = await response.json();
-          alert(errorData.error || "Ошибка при сохранении результатов");
-        }
+        alert("Результаты успешно сохранены!");
       } catch (error) {
-        console.error("Ошибка при отправке результатов:", error);
+        console.error("Ошибка при сохранении результатов:", error);
       }
-    },
-  },
-  beforeUnmount() {
-    clearInterval(this.timer);
+    };
+
+    const retryTest = () => {
+      currentRound.value = 0;
+      score.value = 0;
+      colorOptions.value = [];
+      selectedColor.value = null;
+      feedback.value = "";
+      testStarted.value = false;
+      time.value = "00:00:00";
+    };
+
+    return {
+      totalRounds,
+      currentRound,
+      score,
+      colorOptions,
+      selectedColor,
+      feedback,
+      testStarted,
+      time,
+      startTest,
+      nextRound,
+      generateColorOptions,
+      getSimilarColors,
+      checkAnswer,
+      calculateResults,
+      formatTime,
+      saveResults,
+      retryTest,
+    };
   },
 };
 </script>
 
-<style src="../assets/style.css"></style>
+<style scoped>
+.container {
+  max-width: 800px;
+  margin: 0 auto;
+}
+
+.row {
+  display: flex;
+  justify-content: space-around;
+  margin-top: 20px;
+}
+
+.col-3 {
+  flex: 1;
+  margin: 0 10px;
+}
+
+.feedback {
+  margin-top: 20px;
+  font-size: 1.2em;
+  color: green;
+}
+</style>
