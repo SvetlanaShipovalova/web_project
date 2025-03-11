@@ -63,6 +63,7 @@ export default {
       currentRound: 0,
       startTime: null,
       gameInterval: null,
+      isRoundActive: true,
     };
   },
   computed: {
@@ -78,30 +79,30 @@ export default {
     },
   },
   methods: {
-    startGame() {
-      this.gameStarted = true;
-      this.gameEnded = false;
-      this.number_correct_answers = 0;
-      this.currentRound = 0;
-      this.timeElapsed = 0;
-      this.timeLeft = 50;
-      this.time = "00:00:00";
-      this.startTime = Date.now();
+  startGame() {
+    this.gameStarted = true;
+    this.gameEnded = false;
+    this.number_correct_answers = 0;
+    this.currentRound = 0;
+    this.timeElapsed = 0;
+    this.timeLeft = 50;
+    this.time = "00:00:00";
+    this.startTime = Date.now();
 
-      this.generateRandomSquare();
+    this.generateRandomSquare();
 
-      this.gameInterval = setInterval(() => {
-        if (this.currentRound < this.number_all_answers) {
-          this.currentRound++;
-          this.timeLeft--;
-          this.timeElapsed++;
-          this.time = this.formatTime(this.timeElapsed);
-          this.generateRandomSquare();
-        } else {
-          this.endGame();
-        }
-      }, 1000);
-    },
+    this.gameInterval = setInterval(() => {
+      if (this.currentRound < this.number_all_answers) {
+        this.currentRound++;
+        this.timeLeft--;
+        this.timeElapsed++;
+        this.time = this.formatTime(this.timeElapsed);
+        this.generateRandomSquare();
+      } else {
+        this.endGame();
+      }
+    }, 1000);
+  },
 
     formatTime(seconds) {
       const hours = Math.floor(seconds / 3600).toString().padStart(2, "0");
@@ -111,15 +112,17 @@ export default {
     },
 
     generateRandomSquare() {
-      this.activeSquare = Math.floor(Math.random() * 30) + 1;
-    },
+    this.activeSquare = Math.floor(Math.random() * 30) + 1;
+    this.isRoundActive = true; // Сброс флага при новом раунде
+  },
 
-    handleClick(index) {
-      if (index === this.activeSquare) {
-        this.number_correct_answers++;
-        this.generateRandomSquare();
-      }
-    },
+  handleClick(index) {
+    if (this.isRoundActive && index === this.activeSquare) {
+      this.number_correct_answers++;
+      this.isRoundActive = false; // Блокируем дополнительные клики
+      this.generateRandomSquare(); // Генерируем новый активный квадрат
+    }
+  },
 
     endGame() {
       clearInterval(this.gameInterval);

@@ -16,7 +16,7 @@
                     <p>Правильные ответы: {{ number_correct_answers }} / {{ number_all_answers }}</p>
                 </div>
                 <div class="sequence">
-                    <p v-html="questions[currentQuestion].sequence"></p>
+                    <h3 v-html="questions[currentQuestion].sequence"></h3>
                 </div>
                 <div class="answers">
                     <button

@@ -6,7 +6,7 @@
       <div v-if="currentView === 'start'">
         <h1>Тест таблицы Шульте</h1>
         <p><strong>Игра:</strong> Тест таблицы Шульте помогает развивать внимание, концентрацию и скорость обработки визуальной информации.</p>
-        <p><strong>Цель игры:</strong> Вам будет представлена сетка с числами, расположенными в случайном порядке. Нажимайте на числа по порядку (1, 2, 3 и так далее), избегая ошибок. Ошибки фиксируются, а за пропущенные или неверные клики начисляются штрафные баллы.</p>
+        <p><strong>Цель игры:</strong> Вам будет представлена сетка с числами, расположенными в случайном порядке. Нажимайте на числа по порядку (1, 2, 3 и так далее), избегая ошибок. Ошибки фиксируются, а за пропущенные или неверные клики начисляются штрафные баллы. Время на выполнение каждого раунда 60 секунд.</p>
         <button id="start-button" @click="startTest">Начать тест</button>
       </div>
 
@@ -23,7 +23,7 @@
             @click="checkNumber(number)"
             class="grid-button"
           >
-            {{ number }}
+          <h2>{{ number }}</h2>
           </button>
         </div>
         <div class="controls">
@@ -244,16 +244,22 @@ export default {
 
 .grid {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(60px, 1fr));
+  grid-template-columns: repeat(auto-fit, minmax(100px, 1fr)); /* Увеличиваем ширину колонок */
   gap: 10px;
   margin: 20px auto;
-  max-width: 300px;
+  max-width: 500px; /* Увеличиваем максимальную ширину сетки */
 }
 
 .grid-button {
-  padding: 20px;
-  font-size: 18px;
+  padding: 30px; /* Увеличиваем padding */
+  min-width: 80px; /* Устанавливаем минимальную ширину кнопок */
+  font-size: 24px; /* Крупный шрифт */
+  font-weight: bold;
   cursor: pointer;
+  box-sizing: border-box; /* Учитываем padding в размере кнопки */
+  display: flex;
+  align-items: center; /* Выравниваем текст по центру вертикально */
+  justify-content: center; /* Выравниваем текст по центру горизонтально */
 }
 
 .controls {

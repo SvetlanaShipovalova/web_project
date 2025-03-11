@@ -35,9 +35,9 @@
         <p>Точность: {{ accuracy }}%</p>
         <button class="btn btn-success" @click="restartGame">Пройти снова</button>
       </div>
-      <router-link to="/tests" class="btn btn-secondary mt-3">Назад к тестам</router-link>
     </div>
   </div>
+  <router-link to="/tests" class="btn btn-secondary mt-3">Назад к тестам</router-link>
 </template>
 
 <script>
@@ -66,7 +66,6 @@ export default {
     },
   },
   methods: {
-<<<<<<< HEAD
     startTest() {
       this.testStarted = true;
       this.testFinished = false;
@@ -112,56 +111,6 @@ export default {
         return count + (parseInt(input) === this.numbers[index] ? 1 : 0);
       }, 0); // Подсчет правильных ответов
       this.saveResults(); // Сохраняем результаты
-=======
-    startGame() {
-      this.gameStarted = true;
-      this.gameEnded = false;
-      this.number_correct_answers = 0;
-      this.currentRound = 0;
-      this.elapsedTime = 0;
-      this.time = "00:00:00";
-      this.startTimer();
-      this.nextRound();
-    },
-    startTimer() {
-      this.startTime = performance.now();
-      this.timerInterval = setInterval(() => {
-        const totalSeconds = Math.floor((performance.now() - this.startTime) / 1000);
-        this.time = new Date(totalSeconds * 1000).toISOString().substr(11, 8);
-      }, 1000);
-    },
-    stopTimer() {
-      clearInterval(this.timerInterval);
-    },
-    nextRound() {
-      if (this.currentRound >= this.number_all_answers) {
-        this.endGame();
-        return;
-      }
-      this.currentRound++;
-      this.generateGrid();
-    },
-    generateGrid() {
-      this.grid = Array(300).fill(44);
-      const randomIndex = Math.floor(Math.random() * 300);
-      this.grid[randomIndex] = 45;
-    },
-    handleClick(num) {
-      if (num === 45) {
-        this.number_correct_answers++;
-      }
-      this.nextRound();
-    },
-    endGame() {
-      this.stopTimer();
-      this.gameStarted = false;
-      this.gameEnded = true;
-      this.saveResults();
-    },
-    restartGame() {
-      this.stopTimer();
-      this.startGame();
->>>>>>> d56161a91d3fcd9674f26ad66010e360c26bbd84
     },
     async saveResults() {
       try {
