@@ -3,41 +3,39 @@
   <div class="container mt-5 text-center">
     <h2>{{ $route.params.name }}</h2>
     <div id="app">
-      <div v-if="currentView === 'start'">
-        <h1>Тест на внимание «Мюнстерберга»</h1>
+      <!-- Начальный экран -->
+      <div v-if="!gameStarted && !gameEnded">
+        <h1>Тест Мюнсберга</h1>
         <p>
-          <strong>"Тест на внимание «Мюнстерберга»"</strong> — это игра для тренировки концентрации и скорости восприятия текста.
+          <strong>Цель игры:</strong> Вам будет предложен список слов. Ваша задача — как можно быстрее
+          найти и выделить в списке слова, не соответствующие общей категории.
         </p>
-        <p>
-          <strong>Цель игры:</strong> Найти как можно больше скрытых слов в последовательности букв.
-        </p>
-        <button id="start-button" @click="startTest">Начать тест</button>
+        <button class="start-button btn btn-primary" @click="startGame">Начать тест</button>
       </div>
 
-      <div v-else-if="currentView === 'test'">
-        <h2>Раунд {{ round }}</h2>
-        <p>Читаем текст, подчеркните как можно быстрее следующие слова:</p>
-        <p>Время выполнения задания — 2 минуты.</p>
-        <p>Текст для поиска:</p>
-        <div class="test-text" v-html="textToHighlight"></div>
-
-        <div class="timer">
-          Время осталось: {{ remainingTime }} сек
+      <!-- Игровой экран -->
+      <div v-else-if="gameStarted">
+        <p>Оставшееся время: {{ formattedTime }}</p>
+        <p>Выделено неверных слов: {{ number_correct_answers }} / {{ number_all_answers }}</p>
+        <div class="word-list">
+          <button v-for="(word, index) in words" :key="index" 
+                  :class="{ selected: selectedWords.includes(word), correct: oddWords.includes(word) && selectedWords.includes(word) }" 
+                  @click="selectWord(word)">
+            {{ word }}
+          </button>
         </div>
+        <button class="btn btn-warning mt-3" @click="endGame">Завершить тест</button>
       </div>
 
-      <div v-else-if="currentView === 'result'">
-        <h1>Результаты</h1>
-        <p>Раунд {{ round }} завершён!</p>
+      <!-- Финальный экран -->
+      <div v-if="gameEnded" class="end-message">
+        <h3>Тест завершен!</h3>
+        <p>Выделено неверных слов: {{ number_correct_answers }} / {{ number_all_answers }}</p>
         <p>Точность: {{ accuracy }}%</p>
-        <p>Время: {{ time }}</p>
-        <p>Всего слов: {{ totalWords }}</p>
-        <p>Правильно подчеркнутых слов: {{ correctWords }}</p>
-        <button @click="restartTest">Повторить</button>
-        <button @click="goBack">Назад</button>
+        <button class="btn btn-success" @click="restartGame">Пройти снова</button>
       </div>
+      <router-link to="/tests" class="btn btn-secondary mt-3">Назад к тестам</router-link>
     </div>
-    <router-link to="/tests" class="btn btn-secondary">Назад к тестам</router-link>
   </div>
 </template>
 
@@ -46,170 +44,148 @@ import Navbar from "../view/Navbar.vue";
 import { useAuthStore } from '../store/authStore';
 
 export default {
-  components: {
-    Navbar,
-  },
+  components: { Navbar },
   setup() {
     const authStore = useAuthStore();
     return { authStore };
   },
   data() {
     return {
-      currentView: 'start',
-      round: 1,
-      remainingTime: 120, // 2 минуты
-      text: 'бсолнцевтргщоцрайонзгучновостьхэьгчяфактуекэкзаментрочягшгцкпрокуроргурстабюетеорияентсджэбьамхоккейтрсицыфцуйгзхтелевизорсолджщзхюэлгщьбапамятьшогхеюжп',
-      highlightedWords: ['новость', 'память', 'теория', 'телевизор', 'любовь'],
-      wordsFound: [],
-      totalWords: 0,
-      correctWords: 0,
-      totalTime: 0,
-      userInput: "",
+      gameStarted: false,
+      gameEnded: false,
+      timeLeft: 60,
+      words: [],
+      oddWords: [],
+      selectedWords: [],
+      number_all_answers: 0,
+      number_correct_answers: 0,
+      time: "00:00:00",
+      gameInterval: null,
     };
   },
   computed: {
-    time() {
-      return this.formatTime(this.totalTime);
+    formattedTime() {
+      return `00:00:${this.timeLeft.toString().padStart(2, "0")}`;
     },
     accuracy() {
-      if (this.totalWords === 0) return 0;
-      const calculated = (this.correctWords / this.totalWords) * 100;
-      return Math.round(calculated);
+      if (this.number_all_answers === 0) return 0;
+      return ((this.number_correct_answers / this.number_all_answers) * 100).toFixed(2);
     },
-    textToHighlight() {
-      return this.highlightText(this.text);
-    }
   },
   methods: {
-    formatTime(seconds) {
-      const minutes = Math.floor(seconds / 60);
-      const secs = seconds % 60;
-      return `${String(minutes).padStart(2, '0')}:${String(secs).padStart(2, '0')}`;
-    },
-
-    highlightText(text) {
-      let highlightedText = text;
-      this.highlightedWords.forEach(word => {
-        const regex = new RegExp(`(${word})`, 'gi');
-        highlightedText = highlightedText.replace(regex, '<span class="highlight">$1</span>');
-      });
-      return highlightedText;
-    },
-
-    startTest() {
-      this.currentView = 'test';
-      this.startRound();
-    },
-
-    startRound() {
-      this.totalWords = this.highlightedWords.length;
-      this.correctWords = 0;
-      this.remainingTime = 120;
-      this.userInput = "";
-
-      // Таймер
-      const countdown = setInterval(() => {
-        this.remainingTime--;
-        this.totalTime++;
-
-        if (this.remainingTime <= 0) {
-          clearInterval(countdown);
-          this.endRound();
+    startGame() {
+      this.gameStarted = true;
+      this.gameEnded = false;
+      this.selectedWords = [];
+      this.timeLeft = 60;
+      this.generateWordList();
+      this.number_all_answers = this.oddWords.length;
+      
+      this.gameInterval = setInterval(() => {
+        if (this.timeLeft > 0) {
+          this.timeLeft--;
+        } else {
+          this.endGame();
         }
       }, 1000);
     },
-
-    endRound() {
-      this.currentView = 'result';
-      this.saveResults();
+    
+    generateWordList() {
+      const categories = [
+        { category: "Фрукты", words: ["Яблоко", "Груша", "Банан", "Автобус", "Апельсин", "Виноград", "Клубника", "Дом"] },
+        { category: "Животные", words: ["Собака", "Кошка", "Тигр", "Слон", "Ручка", "Лев", "Медведь", "Стул"] },
+      ];
+      const chosenCategory = categories[Math.floor(Math.random() * categories.length)];
+      this.words = chosenCategory.words.sort(() => Math.random() - 0.5);
+      this.oddWords = chosenCategory.words.filter(word => !["Яблоко", "Груша", "Банан", "Апельсин", "Виноград", "Клубника"].includes(word) &&
+                                                          !["Собака", "Кошка", "Тигр", "Слон", "Лев", "Медведь"].includes(word));
+      this.number_all_answers = this.oddWords.length;
     },
 
-    checkAnswer(word) {
-      if (this.highlightedWords.includes(word) && !this.wordsFound.includes(word)) {
-        this.wordsFound.push(word);
-        this.correctWords++;
+    selectWord(word) {
+      if (!this.selectedWords.includes(word)) {
+        this.selectedWords.push(word);
+        this.number_correct_answers = this.selectedWords.filter(w => this.oddWords.includes(w)).length;
       }
     },
 
-    restartTest() {
-      this.round = 1;
-      this.currentView = 'start';
-      this.totalTime = 0;
+    endGame() {
+      clearInterval(this.gameInterval);
+      this.gameStarted = false;
+      this.gameEnded = true;
+      this.saveResults();
     },
 
-    goBack() {
-      this.$router.push('/tests');
+    restartGame() {
+      this.startGame();
     },
 
     async saveResults() {
       if (!this.authStore.user) {
-        alert("Для сохранения результатов необходимо авторизоваться");
+        alert("Пользователь не авторизован. Пожалуйста, войдите в систему.");
         return;
       }
 
+      const testId = 6;
+      const accuracyValue = parseFloat(this.accuracy);
+
       try {
-        const payload = {
-          test: 1, // Тест концентрации внимания
-          user: this.authStore.user.id,
-          score_percentage: this.accuracy,
-          time: this.time,
-          number_all_answers: this.totalWords,
-          number_correct_answers: this.correctWords
-        };
-
-        console.log('Saving results:', payload);
-
-        const response = await fetch("/api/result/", {
+        const response = await fetch("http://127.0.0.1:8000/api/result/", {
           method: "POST",
           headers: {
             "Content-Type": "application/json",
             Authorization: `Bearer ${localStorage.getItem("token")}`,
           },
-          body: JSON.stringify(payload)
+          body: JSON.stringify({
+            test: testId,
+            user: this.authStore.user.id,
+            score_percentage: parseInt(accuracyValue, 10),
+            time: this.time,
+            number_all_answers: this.number_all_answers,
+            number_correct_answers: this.number_correct_answers,
+            accuracy: parseInt(accuracyValue, 10),
+          }),
         });
 
-        const responseData = await response.json();
-        console.log('Server response:', responseData);
-
-        if (!response.ok) {
-          throw new Error(responseData.error || 'Unknown server error');
+        if (response.ok) {
+          alert("Результаты успешно сохранены!");
+        } else {
+          const errorData = await response.json();
+          alert(errorData.detail || errorData.error || "Ошибка при сохранении");
         }
-
-        alert("Результаты успешно сохранены!");
       } catch (error) {
-        console.error("Save error:", error);
-        alert(`Ошибка сохранения: ${error.message}`);
+        console.error("Ошибка при отправке результатов:", error);
+        alert("Ошибка соединения с сервером");
       }
-    }
-  }
+    },
+  },
 };
 </script>
 
-<style scoped>
-#app {
-  font-family: Avenir, Helvetica, Arial, sans-serif;
-  text-align: center;
-  color: #2c3e50;
-  margin-top: 60px;
-}
-
-.test-text {
-  font-size: 1.5rem;
-  margin: 20px 0;
-}
-
-.highlight {
-  background-color: yellow;
-}
-
-.timer {
-  font-size: 1.2rem;
+<style>
+.word-list {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 10px;
   margin-top: 20px;
 }
 
-button {
+.word-list button {
   padding: 10px 20px;
-  font-size: 1rem;
+  font-size: 16px;
+  border: 1px solid #333;
+  background-color: lightgray;
   cursor: pointer;
+}
+
+.word-list button.selected {
+  background-color: red;
+  color: white;
+}
+
+.word-list button.correct {
+  background-color: green;
+  color: white;
 }
 </style>
