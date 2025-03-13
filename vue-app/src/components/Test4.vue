@@ -20,7 +20,7 @@
         <div
           v-for="(emoji, index) in shuffledEmojis"
           :key="index"
-          class="col-2 card m-2 p-4 bg-light text-center"
+          class="col-2 card m-2 p-4 bg-light text-center mr-2"
           @click="flipCard(index)"
         >
           <span class="emoji" style="font-size: 2em">{{ cardStates[index] }}</span>
@@ -35,10 +35,10 @@
         <p>Время выполнения: {{ formattedTime }}</p>
       </div>
 
-      <br><router-link to="/tests" class="btn btn-secondary">
+    </div>
+    <br><router-link to="/tests" class="btn btn-secondary">
         Назад к тестам
       </router-link>
-    </div>
   </div>
 </template>
 

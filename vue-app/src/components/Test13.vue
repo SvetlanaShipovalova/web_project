@@ -1,41 +1,43 @@
 <template>
   <Navbar />
   <div class="container mt-5 text-center">
-    <h2>{{ $route.params.name }}</h2>
+    <h2>Тест 13</h2>
     <div id="app">
-      <div v-if="currentView === 'start'">
-        <h1>Тест на восприятие цвета</h1>
+      <!-- Начальный экран -->
+      <div v-if="!gameStarted && !gameEnded">
+        <h1>Тест на внимательность</h1>
         <p>
-          <strong>"Тест на восприятие цвета"</strong> — это игра для тренировки внимания и когнитивной гибкости.
+          <strong>Игра:</strong> "Тест на внимательность" — это игра для развития концентрации и скорости восприятия.
         </p>
         <p>
-          <strong>Цель игры:</strong> Выбрать цвет, которым написано слово, а не тот, который оно обозначает.
+          <strong>Цель игры:</strong> Среди множества чисел "44" найдите одно число "45" и нажмите на него как можно быстрее.
         </p>
-        <button id="start-button" @click="startTest">Начать тест</button>
+        <button class="start-button btn btn-primary" @click="startGame">Начать игру</button>
       </div>
 
-      <div v-else-if="currentView === 'test'">
-        <h2>Раунд {{ round }}</h2>
-        <p>Выберите цвет, которым написано слово.</p>
-        <h1 :style="{ color: currentColor }">{{ currentWord }}</h1>
-
-        <div class="buttons">
-          <button v-for="color in shuffledColors" :key="color" @click="checkAnswer(color)" :style="{ color: color }">{{ colorNames[color] }}</button>
+      <!-- Игровой экран -->
+      <div v-else-if="gameStarted">
+        <p>Прошедшее время: {{ elapsedTime }}</p>
+        <p>Раунд: {{ currentRound }} / {{ number_all_answers }}</p>
+        <p>Правильные ответы: {{ number_correct_answers }} / {{ number_all_answers }}</p>
+        <div class="game-area d-flex flex-wrap justify-content-center">
+          <div v-for="(num, index) in grid" :key="index" 
+               class="number-cell" 
+               @click="handleClick(num)">{{ num }}</div>
         </div>
       </div>
 
-      <div v-else-if="currentView === 'result'">
-        <h1>Результаты</h1>
+      <!-- Финальный экран -->
+      <div v-if="gameEnded" class="end-message">
+        <h3>Игра завершена!</h3>
+        <p>Время выполнения: {{ elapsedTime }}</p>
+        <p>Правильные ответы: {{ number_correct_answers }} / {{ number_all_answers }}</p>
         <p>Точность: {{ accuracy }}%</p>
-        <p>Время: {{ time }}</p>
-        <p>Вопросов: {{ number_all_answers }}</p>
-        <p>Верных ответов: {{ number_correct_answers }}</p>
-        <button @click="restartTest">Повторить</button>
-        <button @click="goBack">Назад</button>
+        <button class="btn btn-success" @click="restartGame">Пройти снова</button>
       </div>
     </div>
-    <router-link to="/tests" class="btn btn-secondary">Назад к тестам</router-link>
   </div>
+  <router-link to="/tests" class="btn btn-secondary mt-3">Назад к тестам</router-link>
 </template>
 
 <script>
@@ -43,139 +45,131 @@ import Navbar from "../view/Navbar.vue";
 import { useAuthStore } from '../store/authStore';
 
 export default {
-  components: {
-    Navbar,
-  },
+  components: { Navbar },
   setup() {
     const authStore = useAuthStore();
     return { authStore };
   },
   data() {
     return {
-      currentView: 'start',
-      round: 1,
-      colors: ["red", "blue", "green", "yellow", "black"],
-      colorNames: { red: "Красный", blue: "Синий", green: "Зелёный", yellow: "Жёлтый", black: "Чёрный" },
-      currentWord: "",
-      currentColor: "",
-      shuffledColors: [],
+      gameStarted: false,
+      gameEnded: false,
       number_all_answers: 10,
       number_correct_answers: 0,
-      totalTime: 0,
-      startTime: null
+      currentRound: 1,
+      startTime: null,
+      elapsedTime: "00:00",
+      timer: null,
+      grid: [],
     };
   },
   computed: {
-    time() {
-      return `${this.totalTime.toFixed(2)} сек`;
-    },
     accuracy() {
-      if (this.number_all_answers === 0) return 0;
-      return Math.round((this.number_correct_answers / this.number_all_answers) * 100);
-    }
+      return this.number_all_answers ? ((this.number_correct_answers / this.number_all_answers) * 100).toFixed(2) : 0;
+    },
   },
   methods: {
-    startTest() {
-      this.currentView = 'test';
-      this.startTime = performance.now();
-      this.nextRound();
+    startGame() {
+      this.gameStarted = true;
+      this.gameEnded = false;
+      this.currentRound = 1;
+      this.number_correct_answers = 0;
+      this.startTime = Date.now();
+      this.updateElapsedTime();
+      this.timer = setInterval(this.updateElapsedTime, 1000);
+      this.generateGrid();
     },
-
-    nextRound() {
-      if (this.round > this.number_all_answers) {
-        this.endTest();
-        return;
-      }
-      const randomIndex = Math.floor(Math.random() * this.colors.length);
-      this.currentWord = this.colorNames[this.colors[randomIndex]];
-      this.currentColor = this.colors[(randomIndex + Math.floor(Math.random() * (this.colors.length - 1) + 1)) % this.colors.length];
-      this.shuffledColors = [...this.colors].sort(() => Math.random() - 0.5);
+    updateElapsedTime() {
+      const elapsedSeconds = Math.floor((Date.now() - this.startTime) / 1000);
+      const minutes = Math.floor(elapsedSeconds / 60);
+      const seconds = elapsedSeconds % 60;
+      this.elapsedTime = `${minutes.toString().padStart(2, "0")}:${seconds.toString().padStart(2, "0")}`;
     },
-
-    checkAnswer(color) {
-      if (color === this.currentColor) {
+    generateGrid() {
+      this.grid = Array(99).fill(44);
+      const randomIndex = Math.floor(Math.random() * 99);
+      this.grid[randomIndex] = 45;
+    },
+    handleClick(num) {
+      if (num === 45) {
         this.number_correct_answers++;
       }
-      this.round++;
-      this.nextRound();
+      this.currentRound++;
+      if (this.currentRound > this.number_all_answers) {
+        this.endGame();
+      } else {
+        this.generateGrid();
+      }
     },
-
-    endTest() {
-      this.totalTime = (performance.now() - this.startTime) / 1000;
-      this.currentView = 'result';
+    endGame() {
+      clearInterval(this.timer);
+      this.gameStarted = false;
+      this.gameEnded = true;
       this.saveResults();
     },
-
-    restartTest() {
-      this.round = 1;
-      this.number_correct_answers = 0;
-      this.totalTime = 0;
-      this.currentView = 'start';
-    },
-
-    goBack() {
-      this.$router.push('/tests');
-    },
-
     async saveResults() {
-      if (!this.authStore.user) {
-        alert("Для сохранения результатов необходимо авторизоваться");
+      if (!this.authStore.user || !this.authStore.user.id) {
+        alert("Ошибка: Не найден ID пользователя. Пожалуйста, войдите в систему.");
         return;
       }
       try {
-        await fetch("https://svetasy.pythonanywhere.com/api/result/", {
+        const response = await fetch("http://127.0.0.1:8000/api/result/", {
           method: "POST",
           headers: {
             "Content-Type": "application/json",
-            Authorization: `Bearer ${localStorage.getItem("token")}`,
+            "Authorization": `Bearer ${localStorage.getItem("token")}`,
           },
           body: JSON.stringify({
-            test: 2,
+            test: 13,
             user: this.authStore.user.id,
-            score_percentage: this.accuracy,
-            time: this.time,
+            score_percentage: parseInt(this.accuracy, 10),
+            time: this.elapsedTime,
             number_all_answers: this.number_all_answers,
-            number_correct_answers: this.number_correct_answers
+            number_correct_answers: this.number_correct_answers,
           }),
         });
-        alert("Результаты успешно сохранены!");
+        if (!response.ok) {
+          const errorData = await response.json();
+          alert(errorData.error || "Ошибка при сохранении результатов");
+        } else {
+          alert("Результаты успешно сохранены!");
+        }
       } catch (error) {
-        console.error("Ошибка при отправке результатов:", error);
+        alert("Ошибка соединения с сервером");
       }
-    }
-  }
+    },
+    restartGame() {
+      this.gameStarted = false;
+      this.gameEnded = false;
+      this.startGame();
+    },
+  },
 };
 </script>
 
-<style scoped>
-#app {
-  font-family: Avenir, Helvetica, Arial, sans-serif;
-  text-align: center;
-  color: #2c3e50;
-  margin-top: 60px;
-}
-
-h1 {
-  font-size: 2rem;
-  margin: 20px 0;
-}
-
-.buttons {
+<style>
+.container {
   display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+.game-area {
+  display: grid;
+  grid-template-columns: repeat(10, 30px);
+  gap: 5px;
+  margin-top: 20px;
   justify-content: center;
-  gap: 10px;
 }
-
-button {
-  padding: 10px 20px;
-  font-size: 1.2rem;
+.number-cell {
+  width: 30px;
+  height: 30px;
+  background-color: black;
+  color: yellow;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 18px;
   cursor: pointer;
-  border: none;
-  background-color: #f0f0f0;
-  transition: background-color 0.2s;
-}
-
-button:hover {
-  background-color: #ddd;
+  border-radius: 3px;
 }
 </style>

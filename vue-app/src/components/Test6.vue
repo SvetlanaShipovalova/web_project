@@ -14,7 +14,7 @@
         <div v-else-if="gameStarted">
           <p>Оставшееся время: {{ formattedTime }}</p>
           <p>Жизни: {{ lives }}</p>
-          <p>Раунд: {{ currentRound }} / {{ number_all_answers }}</p>
+          <p>Раунд: {{ number_all_answers }}</p>
           <p>Правильные ответы: {{ number_correct_answers }} / {{ number_all_answers }}</p>
 
           <div class="game-area d-flex justify-content-center">
@@ -29,8 +29,7 @@
               </div>
             </div>
           </div>
-
-          <p class="instruction">Совпадают ли изображения?</p>
+          <h4 class="instruction">Совпадают ли изображения?</h4>
           <div class="choices d-flex justify-content-center">
             <button class="choice-button btn btn-danger mx-2" @click="handleAnswer(false)">Нет</button>
             <button class="choice-button btn btn-success mx-2" @click="handleAnswer(true)">Да</button>

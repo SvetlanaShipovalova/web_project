@@ -16,7 +16,7 @@
         <p>Загаданное число исчезнет через: {{ remainingTime }} сек</p>
 
         <div class="digit-to-remember">
-          <span v-if="showDigit">{{ currentDigit }}</span>
+          <h2 v-if="showDigit">{{ currentDigit }}</h2>
         </div>
 
         <div class="buttons" v-if="!showDigit">

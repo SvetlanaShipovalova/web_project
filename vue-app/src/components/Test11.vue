@@ -1,68 +1,94 @@
-<template> 
+<template>
   <Navbar />
   <div class="container mt-5 text-center">
-    <h2>Тест 11</h2>
-    <div id="app">
-      <!-- Начальный экран -->
-      <div v-if="!gameStarted && !gameEnded">
-        <h1>Тест на внимательность</h1>
-        <p>
-          <strong>Игра:</strong> "Тест на внимательность" — это игра для развития концентрации и скорости восприятия.
-        </p>
-        <p>
-          <strong>Цель игры:</strong> Среди множества чисел "44" найдите одно число "45" и нажмите на него как можно быстрее.
-        </p>
-        <button class="start-button btn btn-primary" @click="startGame">Начать игру</button>
-      </div>
-
-      <!-- Игровой экран -->
-      <div v-else-if="gameStarted">
-        <p>Время: {{ time }}</p>
-        <p>Раунд: {{ currentRound }} / {{ number_all_answers }}</p>
-        <p>Правильные ответы: {{ number_correct_answers }} / {{ number_all_answers }}</p>
-        <div class="game-area d-flex flex-wrap justify-content-center">
-          <div v-for="(num, index) in grid" :key="index" 
-               class="number-cell" 
-               @click="handleClick(num)">{{ num }}</div>
-        </div>
-      </div>
-
-      <!-- Финальный экран -->
-      <div v-if="gameEnded" class="end-message">
-        <h3>Игра завершена!</h3>
-        <p>Время: {{ time }}</p>
-        <p>Правильные ответы: {{ number_correct_answers }} / {{ number_all_answers }}</p>
-        <p>Точность: {{ accuracy }}%</p>
-        <button class="btn btn-success" @click="restartGame">Пройти снова</button>
-      </div>
+    <h2>Тест на оперативную память</h2>
+    
+    <div v-if="!testStarted && !testFinished">
+      <h3 class="display-4">Запишите числа!</h3>
+      <p class="lead">Цель игры: Запомнить и правильно записать предложенные числа.</p>
+      <p>
+        Вам будет показано 8 чисел поочередно.<br>
+        Каждое число будет отображаться на экране на короткое время 3 секунды.<br>
+        После демонстрации всех чисел, введите их в поля ниже.<br>
+        Если вы видите двузначное число, пожалуйста, вводите его цифры последовательно.<br>
+        Чем больше правильных ответов, тем выше точность!
+      </p>
+      <button class="btn btn-primary btn-lg" @click="startTest">Начать</button>
     </div>
+
+    <div v-if="testStarted && !testFinished">
+      <div class="mt-4">
+        <h4>Следующее число: {{ currentNumber }}</h4>
+      </div>
+      <table class="table table-bordered">
+        <thead>
+          <tr>
+            <th>Число</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr v-for="(num, index) in numbers" :key="index">
+            <td>
+              <input
+                type="text"
+                class="form-control"
+                v-model="userInputs[index]"
+                placeholder="Введите число"
+              />
+            </td>
+          </tr>
+        </tbody>
+      </table>
+      <button class="btn btn-danger mt-3" @click="finishTest">Завершить тест</button>
+    </div>
+
+    <div v-if="testFinished">
+      <h3 class="display-5">Тест завершен!</h3>
+      <p>⏳ Время выполнения: {{ formattedTimeSpent }}</p>
+      <p>✅ Правильные ответы: {{ number_correct_answers }} из {{ number_all_answers }}</p>
+      <p>🎯 Точность: {{ accuracy }}%</p>
+      <button class="btn btn-secondary mt-3" @click="resetTest">Пройти тест снова</button>
+    </div>
+    <br>
+    <router-link to="/tests" class="btn btn-secondary">Назад к тестам</router-link>
   </div>
-  <router-link to="/tests" class="btn btn-secondary mt-3">Назад к тестам</router-link>
 </template>
 
 <script>
 import Navbar from "../view/Navbar.vue";
+import { useAuthStore } from '../store/authStore';
+
 export default {
   components: { Navbar },
+  setup() {
+    const authStore = useAuthStore();
+    return { authStore };
+  },
   data() {
     return {
-      gameStarted: false,
-      gameEnded: false,
-      number_all_answers: 10,
+      testStarted: false,
+      testFinished: false,
+      numbers: [],
+      currentNumber: null,
+      userInputs: Array(8).fill(''),
+      number_all_answers: 8,
       number_correct_answers: 0,
       displayIndex: 0,
-      timeLeft: 60, // Время выполнения теста в секундах
+      timeLeft: 60,
       timer: null,
+      countdown: null,
+      startTime: null,
+      timeSpent: 0
     };
   },
   computed: {
-    formattedTime() {
-      const minutes = Math.floor(this.timeLeft / 60);
-      const seconds = this.timeLeft % 60;
+    formattedTimeSpent() {
+      const minutes = Math.floor(this.timeSpent / 60);
+      const seconds = this.timeSpent % 60;
       return `${minutes.toString().padStart(2, "0")}:${seconds.toString().padStart(2, "0")}`;
     },
     accuracy() {
-      return this.number_all_answers ? ((this.number_correct_answers / this.number_all_answers) * 100).toFixed(2) : 0;
+      return this.number_all_answers > 0 ? ((this.number_correct_answers / this.number_all_answers) * 100).toFixed(2) : 0;
     },
   },
   methods: {
@@ -71,15 +97,15 @@ export default {
       this.testFinished = false;
       this.generateNumbers();
       this.displayNextNumber();
-      this.startTimer(); // Запускаем таймер при начале теста
+      this.startTime = Date.now(); // Запоминаем время начала теста
+      this.startTimer();
     },
     generateNumbers() {
-      // Генерируем 8 случайных чисел от 1 до 100
       this.numbers = Array.from({ length: 8 }, () => Math.floor(Math.random() * 100) + 1);
-      this.userInputs = Array(8).fill(''); // Сброс массива ввода
-      this.number_correct_answers = 0; // Сброс количества правильных ответов
-      this.displayIndex = 0; // Сброс индекса отображаемого числа
-      this.timeLeft = 60; // Сброс времени
+      this.userInputs = Array(8).fill('');
+      this.number_correct_answers = 0;
+      this.displayIndex = 0;
+      this.timeLeft = 60;
     },
     displayNextNumber() {
       this.timer = setInterval(() => {
@@ -87,85 +113,86 @@ export default {
           this.currentNumber = this.numbers[this.displayIndex];
           this.displayIndex++;
         } else {
-          clearInterval(this.timer); // Останавливаем таймер, если все числа показаны
+          clearInterval(this.timer);
+          this.finishTest(); // Завершаем тест, если все числа показаны
         }
       }, 2000);
     },
     startTimer() {
-      const countdown = setInterval(() => {
+      this.countdown = setInterval(() => {
         if (this.timeLeft > 0) {
           this.timeLeft--;
         } else {
-          clearInterval(countdown);
-          this.finishTest(); // Завершаем тест, если время вышло
+          clearInterval(this.countdown);
+          if (!this.testFinished) this.finishTest(); // Завершаем тест, если время вышло
         }
       }, 1000);
     },
     finishTest() {
-      clearInterval(this.timer); // Останавливаем таймер
-      this.calculateScore(); // Подсчет правильных ответов
+      clearInterval(this.timer);
+      clearInterval(this.countdown);
+      this.timeSpent = Math.floor((Date.now() - this.startTime) / 1000); // Считаем затраченное время
+      this.calculateScore();
       this.testFinished = true;
+      this.$forceUpdate();
     },
     calculateScore() {
       this.number_correct_answers = this.userInputs.reduce((count, input, index) => {
-        return count + (parseInt(input) === this.numbers[index] ? 1 : 0);
-      }, 0); // Подсчет правильных ответов
-      this.saveResults(); // Сохраняем результаты
+        return count + (Number(input) === Number(this.numbers[index]) ? 1 : 0);
+      }, 0);
+      this.saveResults();
     },
     async saveResults() {
+      if (!localStorage.getItem("token")) {
+        alert("Ошибка: Пользователь не авторизован.");
+        return;
+      }
+
       try {
-        const response = await fetch("http://127.0.0.1:8000/api/result/", {
+        const response = await fetch("https://svetasy.pythonanywhere.com/api/result/", {
           method: "POST",
           headers: {
             "Content-Type": "application/json",
+            Authorization: `Bearer ${localStorage.getItem("token")}`,
           },
           body: JSON.stringify({
-            test: 2,
-            score_percentage: parseInt(this.accuracy, 10),
-            time: this.time,
+            test: 11,
+            user: this.authStore.user.id,
+            score_percentage: Math.round(this.accuracy),
+            time: this.timeSpent,
             number_all_answers: this.number_all_answers,
             number_correct_answers: this.number_correct_answers,
-            accuracy: parseInt(this.accuracy, 10),
           }),
         });
+
         if (response.ok) {
-          alert("Результаты успешно сохранены!");
+          console.log("Результаты успешно сохранены!");
         } else {
-          alert("Ошибка при сохранении результатов");
+          const errorData = await response.json();
+          console.error("Ошибка сервера:", errorData);
+          alert("Ошибка при сохранении результатов: " + (errorData.error || "Неизвестная ошибка"));
         }
       } catch (error) {
-        alert("Ошибка соединения с сервером");
+        console.error("Ошибка при отправке результатов:", error);
+        alert("Ошибка при отправке результатов. Проверьте подключение к интернету.");
       }
     },
+    resetTest() {
+      this.testStarted = false;
+      this.testFinished = false;
+      this.displayIndex = 0;
+      this.number_correct_answers = 0;
+      this.userInputs = Array(8).fill('');
+      this.timeLeft = 60;
+      this.currentNumber = null;
+      this.timeSpent = 0;
+      clearInterval(this.timer);
+      clearInterval(this.countdown);
+    },
+  },
+  beforeUnmount() {
+    clearInterval(this.timer);
+    clearInterval(this.countdown);
   },
 };
 </script>
-
-<style>
-.container {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-}
-
-.game-area {
-  display: grid;
-  grid-template-columns: repeat(20, 30px);
-  gap: 5px;
-  margin-top: 20px;
-  justify-content: center;
-}
-
-.number-cell {
-  width: 30px;
-  height: 30px;
-  background-color: black;
-  color: yellow;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-size: 18px;
-  cursor: pointer;
-  border-radius: 3px;
-}
-</style>

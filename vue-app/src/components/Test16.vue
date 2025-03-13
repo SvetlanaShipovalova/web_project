@@ -28,10 +28,10 @@
           </div>
         </div>
         <button v-else class="btn btn-primary" @click="startTest">Играть</button>
-        <br />
-        <router-link to="/tests" class="btn btn-secondary">Назад к тестам</router-link>
       </div>
     </div>
+    <br />
+        <router-link to="/tests" class="btn btn-secondary">Назад к тестам</router-link>
   </div>
 </template>
 

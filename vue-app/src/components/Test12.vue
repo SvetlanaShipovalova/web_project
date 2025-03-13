@@ -1,40 +1,74 @@
 <template>
   <Navbar />
   <div class="container mt-5 text-center">
-    <h2>{{ $route.params.name }}</h2>
+    <h2 class="mb-4">{{ $route.params.name }}</h2>
     <div id="app">
-      <!-- Начальный экран -->
-      <div v-if="!gameStarted && !gameEnded">
-        <h1>Тест Мюнсберга</h1>
-        <p>
-          <strong>Цель игры:</strong> Вам будет предложен список слов. Ваша задача — как можно быстрее
-          найти и выделить в списке слова, не соответствующие общей категории.
-        </p>
-        <button class="start-button btn btn-primary" @click="startGame">Начать тест</button>
-      </div>
+      <div class="row justify-content-center">
+        <div class="col-lg-8 col-md-10 col-sm-12">
+          <div class="card shadow">
+            <div class="card-body">
+              <h3 class="card-title">Тест на внимание «Мюнстерберга»</h3>
+              <p class="lead card-text">
+                Цель игры: Найти как можно больше слов в предложенном тексте.
+              </p>
+              <p class="card-text">
+                В начале игры вам будет предложено нажать на кнопку «Играть», чтобы начать тест.<br>
+                Затем вам будет показан текст, содержащий случайные слова.<br>
+                После того как вы просмотрите текст, нажмите кнопку «Проверить количество найденных слов».<br>
+                Вам будет предложено ответить, сколько слов вы нашли, выбрав один из предложенных вариантов чисел.<br>
+                После отправки ответа вы получите обратную связь о правильности вашего ответа и сможете увидеть, сколько слов вы действительно нашли.<br>
+              </p>
 
-      <!-- Игровой экран -->
-      <div v-else-if="gameStarted">
-        <p>Оставшееся время: {{ formattedTime }}</p>
-        <p>Выделено неверных слов: {{ number_correct_answers }} / {{ number_all_answers }}</p>
-        <div class="word-list">
-          <button v-for="(word, index) in words" :key="index" 
-                  :class="{ selected: selectedWords.includes(word), correct: oddWords.includes(word) && selectedWords.includes(word) }" 
-                  @click="selectWord(word)">
-            {{ word }}
-          </button>
+              <button v-if="!testStarted" class="btn btn-primary w-100 mb-3" @click="startTest">
+                Играть
+              </button>
+
+              <div v-else>
+                <p class="random-text bg-light p-3 rounded border" v-html="randomText"></p>
+                <button class="btn btn-success w-100 mb-3" @click="checkWords">
+                  Проверить количество найденных слов
+                </button>
+
+                <div v-if="foundCount !== null" class="quiz">
+                  <h4 class="mb-3">Сколько слов было найдено?</h4>
+                  <div class="d-flex flex-wrap gap-2 justify-content-center">
+                    <button
+                      v-for="option in options"
+                      :key="option"
+                      class="btn btn-outline-secondary"
+                      @click="checkAnswer(option)"
+                      :disabled="isAnswered"
+                    >
+                      {{ option }}
+                    </button>
+                  </div>
+                  <p v-if="selectedOption !== null" class="feedback mt-3 fw-bold">
+                    {{ feedback }}
+                  </p>
+                </div>
+
+                <p v-if="isAnswered && feedback === 'Правильно!'" class="success-message text-success fw-bold">
+                  Вы нашли {{ foundCount }} слов(а).
+                </p>
+
+                <div v-if="isAnswered" class="results mt-4">
+                  <p>Время выполнения теста: <strong>{{ time }}</strong></p>
+                  <p>Точность: <strong>{{ accuracy }}%</strong></p>
+                  <p>Вы выбрали: <strong>{{ selectedOption }}</strong></p>
+                </div>
+
+                <button v-if="isAnswered" class="btn btn-warning w-100 mb-3" @click="retryTest">
+                  Пройти тест еще раз
+                </button>
+
+                <router-link to="/tests" class="btn btn-secondary w-100">
+                  Назад к тестам
+                </router-link>
+              </div>
+            </div>
+          </div>
         </div>
-        <button class="btn btn-warning mt-3" @click="endGame">Завершить тест</button>
       </div>
-
-      <!-- Финальный экран -->
-      <div v-if="gameEnded" class="end-message">
-        <h3>Тест завершен!</h3>
-        <p>Выделено неверных слов: {{ number_correct_answers }} / {{ number_all_answers }}</p>
-        <p>Точность: {{ accuracy }}%</p>
-        <button class="btn btn-success" @click="restartGame">Пройти снова</button>
-      </div>
-      <router-link to="/tests" class="btn btn-secondary mt-3">Назад к тестам</router-link>
     </div>
   </div>
 </template>
@@ -46,88 +80,119 @@ import { useAuthStore } from '../store/authStore';
 export default {
   components: { Navbar },
   setup() {
-    const authStore = useAuthStore();
+    const authStore = useAuthStore(); // Используем хранилище
     return { authStore };
   },
   data() {
     return {
-      gameStarted: false,
-      gameEnded: false,
-      timeLeft: 60,
-      words: [],
-      oddWords: [],
-      selectedWords: [],
-      number_all_answers: 0,
-      number_correct_answers: 0,
-      time: "00:00:00",
-      gameInterval: null,
+      words: [
+        'ФАКТ', 'ТЕОРИЯ', 'БИЗНЕС', 'ДОЧИСЛО', 'КАРТЕ',
+        'МАРКЕТИНГ', 'ДАННЫЕ', 'ДЕНЬГИ', 'КЛЮЧ', 'КУСТ',
+        'АНАЛИЗ', 'ДИАГНОЗ', 'ПРОБЛЕМА', 'РЕШЕНИЕ', 'ПЛАН',
+        'КОНЦЕПЦИЯ', 'СТРАТЕГИЯ', 'МОДЕЛЬ', 'ИССЛЕДОВАНИЕ', 'РЕСУРС',
+        'ИНФОРМАЦИЯ', 'ПРОЦЕСС', 'СИСТЕМА', 'КОММУНИКАЦИЯ', 'ПАРТНЁР',
+        'ПРОЕКТ', 'УСПЕХ', 'ДИАЛОГ', 'КОНТРОЛЬ', 'ОЦЕНКА'
+      ],
+      randomText: '',
+      foundCount: null,
+      options: [],
+      selectedOption: null,
+      feedback: '',
+      isAnswered: false,
+      testStarted: false,
+      time: "00:00:00", 
+      accuracy: 0, 
+      number_all_answers: 0, 
+      number_correct_answers: 0, 
     };
   },
-  computed: {
-    formattedTime() {
-      return `00:00:${this.timeLeft.toString().padStart(2, "0")}`;
-    },
-    accuracy() {
-      if (this.number_all_answers === 0) return 0;
-      return ((this.number_correct_answers / this.number_all_answers) * 100).toFixed(2);
-    },
-  },
   methods: {
-    startGame() {
-      this.gameStarted = true;
-      this.gameEnded = false;
-      this.selectedWords = [];
-      this.timeLeft = 60;
-      this.generateWordList();
-      this.number_all_answers = this.oddWords.length;
-      
-      this.gameInterval = setInterval(() => {
-        if (this.timeLeft > 0) {
-          this.timeLeft--;
-        } else {
-          this.endGame();
+    startTest() {
+      this.testStarted = true;
+      this.startTime = Date.now(); 
+      this.generateRandomText();
+    },
+    generateRandomText() {
+      let text = '';
+      const minLength = 350;
+      const usedWords = new Set();
+
+      while (text.length < minLength) {
+        if (usedWords.size === this.words.length) {
+          break;
         }
-      }, 1000);
-    },
-    
-    generateWordList() {
-      const categories = [
-        { category: "Фрукты", words: ["Яблоко", "Груша", "Банан", "Автобус", "Апельсин", "Виноград", "Клубника", "Дом"] },
-        { category: "Животные", words: ["Собака", "Кошка", "Тигр", "Слон", "Ручка", "Лев", "Медведь", "Стул"] },
-      ];
-      const chosenCategory = categories[Math.floor(Math.random() * categories.length)];
-      this.words = chosenCategory.words.sort(() => Math.random() - 0.5);
-      this.oddWords = chosenCategory.words.filter(word => !["Яблоко", "Груша", "Банан", "Апельсин", "Виноград", "Клубника"].includes(word) &&
-                                                          !["Собака", "Кошка", "Тигр", "Слон", "Лев", "Медведь"].includes(word));
-      this.number_all_answers = this.oddWords.length;
-    },
-
-    selectWord(word) {
-      if (!this.selectedWords.includes(word)) {
-        this.selectedWords.push(word);
-        this.number_correct_answers = this.selectedWords.filter(w => this.oddWords.includes(w)).length;
+        const randomWord = this.words[Math.floor(Math.random() * this.words.length)];
+        if (!usedWords.has(randomWord)) {
+          usedWords.add(randomWord);
+          const randomPosition = Math.floor(Math.random() * (text.length + 1));
+          text = this.insertWord(randomWord, text, randomPosition);
+        }
       }
-    },
+      while (text.length < minLength) {
+        text += ' ';
+      }
 
-    endGame() {
-      clearInterval(this.gameInterval);
-      this.gameStarted = false;
-      this.gameEnded = true;
+      this.randomText = text.trim();
+    },
+    insertWord(word, currentText, position) {
+      return currentText.slice(0, position) + word + currentText.slice(position);
+    },
+    checkWords() {
+      const regex = new RegExp(this.words.join('|'), 'g');
+      const matches = this.randomText.match(regex) || [];
+      this.foundCount = matches.length;
+      this.number_all_answers = this.foundCount; // Количество всех слов в тексте
+      this.generateOptions();
+    },
+    generateOptions() {
+      const correctAnswer = this.foundCount;
+      const optionsSet = new Set([correctAnswer]);
+
+      while (optionsSet.size < 4) {
+        const randomOption = Math.floor(Math.random() * (this.words.length + 1));
+        optionsSet.add(randomOption);
+      }
+      this.options = Array.from(optionsSet).sort((a, b) => a - b);
+    },
+    checkAnswer(option) {
+      this.selectedOption = option;
+
+      if (option === this.foundCount) {
+        this.feedback = 'Правильно!';
+        this.number_correct_answers = this.foundCount;
+      } else {
+        this.feedback = `Неправильно! Правильный ответ: ${this.foundCount}`;
+        this.number_correct_answers = Math.min(option, this.foundCount);
+      }
+
+      this.isAnswered = true;
+      this.calculateResults();
+    },
+    calculateResults() {
+      const elapsedTime = Math.floor((Date.now() - this.startTime) / 1000);
+      this.time = this.formatTime(elapsedTime);
+
+      if (this.selectedOption >= this.number_all_answers) {
+        this.accuracy = ((this.number_all_answers / this.selectedOption) * 100).toFixed(2);
+      } else {
+        this.accuracy = ((this.number_correct_answers / this.number_all_answers) * 100).toFixed(2);
+      }
+
       this.saveResults();
     },
-
-    restartGame() {
-      this.startGame();
+    formatTime(seconds) {
+      const minutes = String(Math.floor(seconds / 60)).padStart(2, '0');
+      const sec = String(seconds % 60).padStart(2, '0');
+      return `00:${minutes}:${sec}`;
     },
-
     async saveResults() {
       if (!this.authStore.user) {
         alert("Пользователь не авторизован. Пожалуйста, войдите в систему.");
         return;
       }
 
-      const testId = 6;
-      const accuracyValue = parseFloat(this.accuracy);
+      const testId = 12;
+      const scorePercentage = this.accuracy;
 
       try {
         const response = await fetch("http://127.0.0.1:8000/api/result/", {
@@ -139,53 +204,46 @@ export default {
           body: JSON.stringify({
             test: testId,
             user: this.authStore.user.id,
-            score_percentage: parseInt(accuracyValue, 10),
+            score_percentage: Math.round(scorePercentage),
             time: this.time,
             number_all_answers: this.number_all_answers,
-            number_correct_answers: this.number_correct_answers,
-            accuracy: parseInt(accuracyValue, 10),
+            number_correct_answers: this.number_correct_answers
           }),
         });
 
         if (response.ok) {
           alert("Результаты успешно сохранены!");
         } else {
-          const errorData = await response.json();
-          alert(errorData.detail || errorData.error || "Ошибка при сохранении");
+          alert("Ошибка при сохранении результатов");
         }
       } catch (error) {
         console.error("Ошибка при отправке результатов:", error);
-        alert("Ошибка соединения с сервером");
       }
     },
-  },
+    retryTest() {
+      this.isAnswered = false; 
+      this.selectedOption = null; 
+      this.feedback = ''; 
+      this.foundCount = null; 
+      this.options = []; 
+      this.randomText = ''; 
+      this.testStarted = false;
+      this.time = "00:00:00"; 
+      this.accuracy = 0; 
+    }
+  }
 };
 </script>
 
-<style>
-.word-list {
-  display: flex;
-  flex-wrap: wrap;
-  justify-content: center;
-  gap: 10px;
-  margin-top: 20px;
+<style scoped>
+.random-text {
+  font-size: 18px;
+  overflow-wrap: break-word;
 }
-
-.word-list button {
-  padding: 10px 20px;
-  font-size: 16px;
-  border: 1px solid #333;
-  background-color: lightgray;
-  cursor: pointer;
+.feedback {
+  font-size: 18px;
 }
-
-.word-list button.selected {
-  background-color: red;
-  color: white;
-}
-
-.word-list button.correct {
-  background-color: green;
-  color: white;
+.results {
+  font-size: 18px;
 }
 </style>

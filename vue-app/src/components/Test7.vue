@@ -8,7 +8,7 @@
         <p><strong>Игра:</strong> "Копилка" — это когнитивная игра, направленная на развитие скорости мышления, зрительного восприятия и вычислительных навыков.</p>
 <p><strong>Цель игры:</strong> Определить, в какой из копилок больше денег, выбрав правильный вариант за минимальное время.</p>
 <p>Нажмите "Начать игру", после чего на экране появятся две копилки с монетами. Ваша задача — быстро определить, в какой из копилок больше монет, и кликнуть по правильному варианту. За каждый правильный ответ начисляется балл, а итоговый результат зависит от количества верных ответов и времени прохождения.</p>
-<p><strong>Правила:</strong> Если вы не можете увидеть все монетки, двигайте курсором, чтобы получить лучший обзор.  Если в обеих копилках одинаковое количество монет, вы можете выбрать любую из них. Время выполнения не ограничено, это тест на ваше внимание и наблюдательность.</p>
+<p><strong>Правила:</strong> Если в обеих копилках одинаковое количество монет, вы можете выбрать любую из них. Время выполнения не ограничено, это тест на ваше внимание и наблюдательность.</p>
         <button class="start-button btn btn-primary" @click="startGame">Начать игру</button>
       </div>
 
@@ -16,12 +16,12 @@
         <p>Раунд: {{ currentRound }} / {{ number_all_answers }}</p>
         <p>Правильные ответы: {{ number_correct_answers }} / {{ number_all_answers }}</p>
         <div class="game-area piggy-bank-game">
-          <div class="piggy-bank border p-3 mx-2" @click="handleAnswer('left')">
+          <div class="piggy-bank border h-100 mx-2" @click="handleAnswer('left')">
             <div v-for="(coin, index) in leftBank" :key="'left-' + index" class="coin">
               {{ coin }}
             </div>
           </div>
-          <div class="piggy-bank border p-3 mx-2" @click="handleAnswer('right')">
+          <div class="piggy-bank border h-100 mx-2" @click="handleAnswer('right')">
             <div v-for="(coin, index) in rightBank" :key="'right-' + index" class="coin">
               {{ coin }}
             </div>

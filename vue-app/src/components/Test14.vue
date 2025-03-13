@@ -40,7 +40,6 @@
         <p>⏳ Время выполнения: {{ formattedTimeSpent }}</p>
         <p>✅ Правильные ответы: {{ number_correct_answers }} из {{ number_all_answers }}</p>
         <p>🎯 Точность: {{ accuracy }}%</p>
-        <router-link to="/tests" class="btn btn-secondary mt-3">Назад к тестам</router-link>
       </div>
     </div>
     <router-link to="/tests" class="btn btn-secondary">Назад к тестам</router-link>
