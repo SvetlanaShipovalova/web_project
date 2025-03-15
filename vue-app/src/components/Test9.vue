@@ -3,7 +3,6 @@
   <div class="container mt-5 text-center">
     <h2>{{ $route.params.name }}</h2>
     <div id="app">
-      <!-- Начальный экран -->
       <div v-if="!gameStarted && !gameEnded">
         <h1>Игра-тренажер: "Наперстки"</h1>
         <p>
@@ -12,7 +11,7 @@
         <p>
           <strong>Цель игры:</strong> Найти, под каким стаканчиком находится шарик после перемешивания. Сложность увеличивается с каждым раундом.
         </p>
-        <button class="start-button btn btn-primary" @click="startGame">Начать игру</button>
+        <button class="start-button" @click="startGame">Начать игру</button>
       </div>
 
       <div v-else-if="gameStarted">
@@ -36,7 +35,7 @@
         <h3>{{ gameWon ? 'Поздравляем!' : 'Игра окончена!' }}</h3>
         <p>Правильных ответов: {{ number_correct_answers }} из {{ number_all_answers }}</p>
         <p>Точность: {{ accuracy }}%</p>
-        <p>Время прохождения игры: {{ time }}</p>
+        <p>Время прохождения игры: {{ time }} сек</p>
       </div>
       <router-link to="/tests" class="btn btn-secondary mt-3">Назад к тестам</router-link>
     </div>
@@ -67,7 +66,7 @@ export default {
       showBall: false,
       isSelectable: false,
       startTime: null,
-      time: 0 // Храним время в секундах
+      time: 0 
     };
   },
   computed: {
@@ -156,10 +155,6 @@ export default {
       this.saveResults();
     },
     async saveResults() {
-      if (!this.authStore.user) {
-        alert("Пользователь не авторизован.");
-        return;
-      }
 
       const testId = 9;
       const payload = {
@@ -175,7 +170,7 @@ export default {
       console.log("Отправляемые данные:", payload);
 
       try {
-        const response = await fetch("http://127.0.0.1:8000/api/result/", {
+        const response = await fetch("https://svetasy.pythonanywhere.com/api/result/", {
           method: "POST",
           headers: {
             "Content-Type": "application/json",

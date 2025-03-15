@@ -3,7 +3,6 @@
   <div class="container mt-5 text-center">
     <h2>{{ $route.params.name }}</h2>
     <div id="app">
-      <!-- Начальный экран -->
       <div v-if="!gameStarted && !gameEnded">
         <h1>Тест реакции</h1>
         <p>
@@ -15,10 +14,9 @@
         <p>
           Ваша задача — как можно быстрее нажимать на подсвеченный квадрат. После каждого клика новый квадрат будет загораться в случайном месте. Игра состоит из 50 раундов, в каждом из которых важно быстро среагировать и нажать на нужный элемент. В конце теста отображаются общее время, количество правильных кликов и точность.
         </p>
-        <button class="start-button btn btn-primary" @click="startGame">Начать игру</button>
+        <button class="start-button" @click="startGame">Начать игру</button>
       </div>
 
-      <!-- Игровой экран -->
       <div v-else-if="gameStarted">
         <p>Оставшееся время: {{ formattedTime }}</p>
         <p>Раунд: {{ currentRound }} / {{ number_all_answers }}</p>
@@ -34,7 +32,6 @@
         </div>
       </div>
 
-      <!-- Финальный экран -->
       <div v-if="gameEnded" class="end-message">
         <h3>Игра завершена!</h3>
         <p>Общее время: {{ time }}</p>
@@ -42,8 +39,8 @@
         <p>Точность: {{ accuracy }}%</p>
         <button class="btn btn-success" @click="restartGame">Пройти снова</button>
       </div>
-      <router-link to="/tests" class="btn btn-secondary mt-3">Назад к тестам</router-link>
     </div>
+    <router-link to="/tests" class="btn btn-secondary"> Назад к тестам</router-link>
   </div>
 </template>
 
@@ -82,7 +79,7 @@ export default {
     accuracy() {
       if (this.number_all_answers === 0) return 0;
       const calculated = (this.number_correct_answers / this.number_all_answers) * 100;
-      return Math.min(100, calculated.toFixed(2)); // Ограничение 100%
+      return Math.min(100, calculated.toFixed(2)); 
     },
   },
   methods: {
@@ -126,7 +123,7 @@ export default {
     handleClick(index) {
       if (this.isRoundActive && index === this.activeSquare) {
         this.number_correct_answers++;
-        this.isRoundActive = false; // Блокируем дополнительные клики
+        this.isRoundActive = false; 
         setTimeout(() => this.generateRandomSquare(), 100);
       }
     },
@@ -144,16 +141,11 @@ export default {
     },
 
     async saveResults() {
-      if (!this.authStore.user) {
-        alert("Пользователь не авторизован. Пожалуйста, войдите в систему.");
-        return;
-      }
-
       const testId = 5;
       const accuracyValue = parseFloat(this.accuracy);
 
       try {
-        const response = await fetch("http://127.0.0.1:8000/api/result/", {
+        const response = await fetch("https://svetasy.pythonanywhere.com/api/result/", {
           method: "POST",
           headers: {
             "Content-Type": "application/json",

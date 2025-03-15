@@ -186,16 +186,12 @@ export default {
       return `00:${minutes}:${sec}`;
     },
     async saveResults() {
-      if (!this.authStore.user) {
-        alert("Пользователь не авторизован. Пожалуйста, войдите в систему.");
-        return;
-      }
 
       const testId = 12;
       const scorePercentage = this.accuracy;
 
       try {
-        const response = await fetch("http://127.0.0.1:8000/api/result/", {
+        const response = await fetch("https://svetasy.pythonanywhere.com/api/result/", {
           method: "POST",
           headers: {
             "Content-Type": "application/json",

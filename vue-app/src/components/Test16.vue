@@ -38,6 +38,7 @@
 <script>
 import { ref, computed } from 'vue';
 import Navbar from "../view/Navbar.vue"; // Assuming Navbar.vue is in the same directory
+import { useAuthStore } from '../store/authStore';
 
 export default {
   components: {
@@ -155,10 +156,6 @@ export default {
     };
 
     const saveResults = async () => {
-      if (!authStore.value.user) {
-        alert("Пользователь не авторизован. Войдите в систему.");
-        return;
-      }
       try {
         await fetch("https://svetasy.pythonanywhere.com/api/result/", {
           method: "POST",
@@ -167,8 +164,8 @@ export default {
             Authorization: `Bearer ${localStorage.getItem("token")}`,
           },
           body: JSON.stringify({
-            test: 20,
-            user: authStore.value.user.id,
+            test: 16,
+            user: this.authStore.user.id,
             accuracy: parseFloat(accuracy.value), // Используем accuracy вместо score_percentage
             time: time.value,
             number_all_answers: totalRounds,

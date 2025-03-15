@@ -13,8 +13,8 @@
       <div v-else-if="currentView === 'test'">
         <h2>Раунд {{ round }}</h2>
         <p>Найдите числа от 1 до {{ maxNumber }} в порядке возрастания.</p>
-        <p>Оставшееся время: {{ remainingTime }} сек</p>
-        <p>Количество ошибок: {{ missClicks }}</p>
+        <p><strong>Оставшееся время:</strong> {{ remainingTime }} сек</p>
+        <p><strong>Количество ошибок:</strong> {{ missClicks }}</p>
         <div class="grid">
           <button
             v-for="number in shuffledNumbers"
@@ -77,7 +77,7 @@ export default {
       totalMissClicks: 0,
       gridDimensions: { rows: 4, cols: 3 },
       time: "00:00:00",
-      number_all_answers: 48, // Общее количество вопросов
+      number_all_answers: 48, 
     };
   },
   computed: {
@@ -88,7 +88,7 @@ export default {
         : 0;
     },
     number_correct_answers() {
-      return this.number_all_answers - this.totalMissClicks; // Вычисляем количество правильных ответов
+      return this.number_all_answers - this.totalMissClicks;
     },
   },
   methods: {
@@ -194,16 +194,11 @@ export default {
       this.time = "00:00:00";
     },
     async saveResults() {
-      if (!this.authStore.user) {
-        alert("Пользователь не авторизован. Пожалуйста, войдите в систему.");
-        return;
-      }
-
       const testId = 1;
       const scorePercentage = this.accuracy;
 
       try {
-        const response = await fetch("http://127.0.0.1:8000/api/result/", {
+        const response = await fetch("https://svetasy.pythonanywhere.com/api/result/", {
           method: "POST",
           headers: {
             "Content-Type": "application/json",
@@ -212,11 +207,11 @@ export default {
           body: JSON.stringify({
             test: testId,
             user: this.authStore.user.id,
-            score_percentage: parseInt(scorePercentage, 10), // Исправлено на целое число
+            score_percentage: parseInt(scorePercentage, 10), 
             time: this.time,
             number_correct_answers: this.number_correct_answers,
             number_all_answers: this.number_all_answers,
-            accuracy: parseInt(scorePercentage, 10), // Исправлено на целое число
+            accuracy: parseInt(scorePercentage, 10), 
           }),
         });
 
@@ -244,24 +239,28 @@ export default {
 
 .grid {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(100px, 1fr)); /* Увеличиваем ширину колонок */
+  grid-template-columns: repeat(auto-fit, minmax(100px, 1fr)); 
   gap: 10px;
   margin: 20px auto;
-  max-width: 500px; /* Увеличиваем максимальную ширину сетки */
+  max-width: 400px; 
 }
 
 .grid-button {
-  padding: 30px; /* Увеличиваем padding */
-  min-width: 80px; /* Устанавливаем минимальную ширину кнопок */
-  font-size: 24px; /* Крупный шрифт */
+  padding: 30px; 
+  min-width: 80px; 
+  font-size: 24px; 
   font-weight: bold;
   cursor: pointer;
-  box-sizing: border-box; /* Учитываем padding в размере кнопки */
+  box-sizing: border-box;
   display: flex;
-  align-items: center; /* Выравниваем текст по центру вертикально */
-  justify-content: center; /* Выравниваем текст по центру горизонтально */
+  align-items: center;
+  justify-content: center;
+  border-color:rgb(78, 19, 255);
 }
-
+.grid-button:disabled {
+    background-color:rgb(179, 205, 250);
+    color: black;
+}
 .controls {
   margin-top: 20px;
 }

@@ -5,14 +5,14 @@
     <div id="app">
       <!-- Начальный экран -->
       <div v-if="!gameStarted && !gameEnded">
-        <h1>Тест на внимательность</h1>
+        <h1>Тест на зрительно-моторную координацию</h1>
         <p>
-          <strong>Игра:</strong> "Тест на внимательность" — это игра для развития концентрации и скорости восприятия.
+          <strong>Игра:</strong> "Тест на зрительно-моторную координацию" — это игра для развития концентрации и скорости восприятия.
         </p>
         <p>
           <strong>Цель игры:</strong> Среди множества чисел "44" найдите одно число "45" и нажмите на него как можно быстрее.
         </p>
-        <button class="start-button btn btn-primary" @click="startGame">Начать игру</button>
+        <button class="start-button" @click="startGame">Начать игру</button>
       </div>
 
       <!-- Игровой экран -->
@@ -22,7 +22,7 @@
         <p>Правильные ответы: {{ number_correct_answers }} / {{ number_all_answers }}</p>
         <div class="game-area d-flex flex-wrap justify-content-center">
           <div v-for="(num, index) in grid" :key="index" 
-               class="number-cell" 
+               class="number-cell bg-dark text-warning p-3" 
                @click="handleClick(num)">{{ num }}</div>
         </div>
       </div>
@@ -33,7 +33,7 @@
         <p>Время выполнения: {{ elapsedTime }}</p>
         <p>Правильные ответы: {{ number_correct_answers }} / {{ number_all_answers }}</p>
         <p>Точность: {{ accuracy }}%</p>
-        <button class="btn btn-success" @click="restartGame">Пройти снова</button>
+        <button @click="restartGame">Пройти снова</button>
       </div>
     </div>
   </div>
@@ -86,8 +86,8 @@ export default {
       this.elapsedTime = `${minutes.toString().padStart(2, "0")}:${seconds.toString().padStart(2, "0")}`;
     },
     generateGrid() {
-      this.grid = Array(99).fill(44);
-      const randomIndex = Math.floor(Math.random() * 99);
+      this.grid = Array(54).fill(44);
+      const randomIndex = Math.floor(Math.random() * 54);
       this.grid[randomIndex] = 45;
     },
     handleClick(num) {
@@ -108,12 +108,8 @@ export default {
       this.saveResults();
     },
     async saveResults() {
-      if (!this.authStore.user || !this.authStore.user.id) {
-        alert("Ошибка: Не найден ID пользователя. Пожалуйста, войдите в систему.");
-        return;
-      }
       try {
-        const response = await fetch("http://127.0.0.1:8000/api/result/", {
+        const response = await fetch("https://svetasy.pythonanywhere.com/api/result/", {
           method: "POST",
           headers: {
             "Content-Type": "application/json",
@@ -160,16 +156,5 @@ export default {
   margin-top: 20px;
   justify-content: center;
 }
-.number-cell {
-  width: 30px;
-  height: 30px;
-  background-color: black;
-  color: yellow;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-size: 18px;
-  cursor: pointer;
-  border-radius: 3px;
-}
+
 </style>

@@ -4,10 +4,10 @@
     <h2>{{ $route.params.name }}</h2>
     <div id="app">
       <div v-if="!testStarted && !testFinished">
-        <h1>🧠 Тест на математическую внимательность</h1>
+        <h1>Тест на математическую внимательность</h1>
         <p>В этом тесте вам будет показано два числа. Ваша задача — определить, равны ли они.</p>
         <p>Всего 20 вопросов. 60 секунд на прохождение.</p>
-        <button class="btn btn-primary start-button" @click="startTest">Начать тест</button>
+        <button class="start-button" @click="startTest">Начать тест</button>
       </div>
       
       <div v-else-if="testStarted && !testFinished">
@@ -15,8 +15,8 @@
         <p>⏳ Оставшееся время: {{ formattedTime }}</p>
         <div class="equation d-flex justify-content-center align-items-center gap-3">
           <span class="fs-4">{{ leftNumber }}</span>
-          <button class="btn btn-primary" @click="checkAnswer(true)">=</button>
-          <button class="btn btn-danger" @click="checkAnswer(false)">≠</button>
+          <button class="btn btn-primary p-3" @click="checkAnswer(true)">=</button>
+          <button class="btn btn-danger p-3" @click="checkAnswer(false)">≠</button>
           <span class="fs-4">{{ rightNumber }}</span>
         </div>
       </div>
@@ -26,10 +26,7 @@
         <p>Вы ответили правильно на {{ number_correct_answers }} из {{ number_all_answers }} вопросов</p>
         <p>⏳ Время выполнения: {{ time }}</p>
         <p>🎯 Точность: {{ accuracy.toFixed(2) }}%</p>
-        <button class="btn btn-success mt-3" @click="resetTest">Пройти снова</button>
-      </div>
-      
-      <div class="mt-4">
+        <button class="mt-3" @click="resetTest">Пройти снова</button>
       </div>
     </div>
     <router-link to="/tests" class="btn btn-secondary mt-3">Назад к тестам</router-link>
@@ -130,10 +127,6 @@ export default {
       this.time = "00:00:00";
     },
     async saveResults() {
-      if (!this.authStore.user) {
-        alert("Пользователь не авторизован. Войдите в систему.");
-        return;
-      }
       const testId = 15;
       const scorePercentage = parseFloat(this.accuracy);
       if (isNaN(scorePercentage)) {
@@ -181,7 +174,7 @@ export default {
   display: flex;
   justify-content: center;
   align-items: center;
-  gap: 15px;
+  gap: 10px;
   font-size: 1.5rem;
 }
 </style>

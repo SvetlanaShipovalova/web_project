@@ -13,10 +13,10 @@
         Если вы видите двузначное число, пожалуйста, вводите его цифры последовательно.<br>
         Чем больше правильных ответов, тем выше точность!
       </p>
-      <button class="btn btn-primary btn-lg" @click="startTest">Начать</button>
+      <button @click="startTest">Начать игру</button>
     </div>
 
-    <div v-if="testStarted && !testFinished">
+    <div v-if="testStarted">
       <div class="mt-4">
         <h4>Следующее число: {{ currentNumber }}</h4>
       </div>
@@ -39,17 +39,16 @@
           </tr>
         </tbody>
       </table>
-      <button class="btn btn-danger mt-3" @click="finishTest">Завершить тест</button>
+      <button class="btn btn-danger mt-1" @click="finishTest">Завершить тест</button>
     </div>
 
     <div v-if="testFinished">
       <h3 class="display-5">Тест завершен!</h3>
-      <p>⏳ Время выполнения: {{ formattedTimeSpent }}</p>
-      <p>✅ Правильные ответы: {{ number_correct_answers }} из {{ number_all_answers }}</p>
-      <p>🎯 Точность: {{ accuracy }}%</p>
+      ⏳ Время выполнения: {{ formattedTimeSpent }}<br>
+      ✅ Правильные ответы: {{ number_correct_answers }} из {{ number_all_answers }}<br>
+      🎯 Точность: {{ accuracy }}%<br>
       <button class="btn btn-secondary mt-3" @click="resetTest">Пройти тест снова</button>
     </div>
-    <br>
     <router-link to="/tests" class="btn btn-secondary">Назад к тестам</router-link>
   </div>
 </template>
@@ -97,7 +96,7 @@ export default {
       this.testFinished = false;
       this.generateNumbers();
       this.displayNextNumber();
-      this.startTime = Date.now(); // Запоминаем время начала теста
+      this.startTime = Date.now();
       this.startTimer();
     },
     generateNumbers() {
@@ -114,7 +113,7 @@ export default {
           this.displayIndex++;
         } else {
           clearInterval(this.timer);
-          this.finishTest(); // Завершаем тест, если все числа показаны
+          this.finishTest(); 
         }
       }, 2000);
     },
@@ -124,14 +123,14 @@ export default {
           this.timeLeft--;
         } else {
           clearInterval(this.countdown);
-          if (!this.testFinished) this.finishTest(); // Завершаем тест, если время вышло
+          if (!this.testFinished) this.finishTest(); 
         }
       }, 1000);
     },
     finishTest() {
       clearInterval(this.timer);
       clearInterval(this.countdown);
-      this.timeSpent = Math.floor((Date.now() - this.startTime) / 1000); // Считаем затраченное время
+      this.timeSpent = Math.floor((Date.now() - this.startTime) / 1000); 
       this.calculateScore();
       this.testFinished = true;
       this.$forceUpdate();
@@ -143,11 +142,7 @@ export default {
       this.saveResults();
     },
     async saveResults() {
-      if (!localStorage.getItem("token")) {
-        alert("Ошибка: Пользователь не авторизован.");
-        return;
-      }
-
+      
       try {
         const response = await fetch("https://svetasy.pythonanywhere.com/api/result/", {
           method: "POST",

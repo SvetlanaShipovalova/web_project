@@ -31,8 +31,6 @@ const testComponents = {
   'Тест 16': defineAsyncComponent(() => import('../components/Test16.vue')),
   'Тест 17': defineAsyncComponent(() => import('../components/Test17.vue')),
   'Тест 18': defineAsyncComponent(() => import('../components/Test18.vue')),
-  'Тест 19': defineAsyncComponent(() => import('../components/Test19.vue')),
-  'Тест 20': defineAsyncComponent(() => import('../components/Test20.vue')),
 };
 
 const currentComponent = computed(() => {

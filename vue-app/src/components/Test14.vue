@@ -10,16 +10,16 @@
         <p>
           <strong>Цель игры:</strong> Сравнить строки и найти лишний символ, выбрать его в приведённой таблице.
         </p>
-        <button class="btn btn-primary btn-lg" @click="startTest">Начать</button>
+        <button @click="startTest">Начать тест</button>
       </div>
 
       <div v-else-if="testStarted">
         <p class="h5">Сравните строки и найдите лишний символ!</p>
-        <p class="h5">Оставшееся время: {{ formattedTime }}</p> <!-- Отображение обратного отсчёта -->
+        <p class="h5">Оставшееся время: {{ formattedTime }}</p> 
         <div class="row mb-4">
-          <div class="col-12">
-            <h4 class="display-5">{{ string1 }}</h4>
-            <h4 class="display-5">{{ string2 }}</h4>
+          <div class="col-12 p-2" style="background-color: rgb(228, 236, 252)">
+            <h4 class="display-6">{{ string1 }}</h4>
+            <h4 class="display-6">{{ string2 }}</h4>
           </div>
         </div>
         <div class="row mb-4">
@@ -27,6 +27,7 @@
             v-for="(char, index) in allCharacters"
             :key="index"
             class="col-2 border d-flex justify-content-center align-items-center p-3"
+            style="background-color: rgb(253, 241, 254)"
             :class="{'bg-success': selectedChar === char && char === extraChar, 'bg-danger': selectedChar === char && char !== extraChar}"
             @click="selectCharacter(char)"
           >
@@ -65,9 +66,9 @@ export default {
       selectedChar: null,
       number_all_answers: 1,
       number_correct_answers: 0,
-      initialTime: 60, // Начальное время (60 секунд)
-      timeLeft: 60, // Оставшееся время
-      time: 0, // Время выполнения
+      initialTime: 60, 
+      timeLeft: 60, 
+      time: 0, 
       timer: null,
     };
   },
@@ -90,13 +91,13 @@ export default {
     startTest() {
       this.testStarted = true;
       this.testFinished = false;
-      this.timeLeft = this.initialTime; // Сбрасываем оставшееся время
-      this.time = 0; // Сбрасываем затраченное время
+      this.timeLeft = this.initialTime; 
+      this.time = 0; 
       this.generateStrings();
       this.startTimer();
     },
     generateStrings() {
-      const symbols = "ⶍ⇈⑸⋍⸛ⱗ⸀≴⬻⥏ⴈ⩡⇭⭑⭜⚱⫈";
+      const symbols = "ⶍ⇈⑸⋍⸛ⱗ⸀≴⬻⥏ⴈ⩡⇭⭑⭜⚱⫈♩";
       const array = symbols.split('');
       this.extraChar = array[Math.floor(Math.random() * array.length)];
       
@@ -106,7 +107,7 @@ export default {
 
       // Подготавливаем все символы для выбора
       this.allCharacters = [...new Set(this.string1.split('').concat(this.string2.split('')))];
-      this.allCharacters = this.shuffle(this.allCharacters); // Перемешиваем для случайного отображения
+      this.allCharacters = this.shuffle(this.allCharacters); 
     },
     shuffle(array) {
       for (let i = array.length - 1; i > 0; i--) {
@@ -123,29 +124,25 @@ export default {
       } else {
         alert(`Неправильно! Лишний символ: ${this.extraChar}`);
       }
-      this.finishTest(); // Завершение теста после выбора
+      this.finishTest(); 
     },
     finishTest() {
       this.testFinished = true;
-      clearInterval(this.timer); // Останавливаем таймер
-      this.time = this.initialTime - this.timeLeft; // Фиксируем затраченное время
-      this.saveResults(); // Сохраняем результаты
+      clearInterval(this.timer); 
+      this.time = this.initialTime - this.timeLeft; 
+      this.saveResults(); 
     },
     startTimer() {
       this.timer = setInterval(() => {
         if (this.timeLeft > 0) {
           this.timeLeft--;
         } else {
-          this.finishTest(); // Завершение теста при истечении времени
+          this.finishTest(); 
         }
       }, 1000);
     },
     async saveResults() {
       const authStore = useAuthStore();
-      if (!authStore.user) {
-        alert("Пользователь не авторизован. Войдите в систему.");
-        return;
-      }
       try {
         const response = await fetch("https://svetasy.pythonanywhere.com/api/result/", {
           method: "POST",
@@ -154,12 +151,12 @@ export default {
             Authorization: `Bearer ${localStorage.getItem("token")}`,
           },
           body: JSON.stringify({
-            test: 18, // ID теста
+            test: 14, 
             user: authStore.user.id,
             score_percentage: Math.round(this.accuracy),
-            time: this.time, // Время выполнения в секундах
-            number_all_answers: this.number_all_answers, // Всегда 1
-            number_correct_answers: this.number_correct_answers, // Сколько правильно
+            time: this.time, 
+            number_all_answers: this.number_all_answers, 
+            number_correct_answers: this.number_correct_answers, 
           }),
         });
 
@@ -176,11 +173,7 @@ export default {
     },
   },
   beforeUnmount() {
-    clearInterval(this.timer); // Останавливаем таймер при размонтировании компонента
+    clearInterval(this.timer); 
   },
 };
 </script>
-
-<style scoped>
-/* Стили не используются, но можно добавить дополнительные стили, если потребуется */
-</style>

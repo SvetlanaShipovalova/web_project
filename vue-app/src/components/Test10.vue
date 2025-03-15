@@ -3,7 +3,6 @@
   <div class="container mt-5 text-center">
     <h2>{{ $route.params.name }}</h2>
     <div id="app">
-      <!-- Начальный экран -->
       <div v-if="!gameStarted && !gameEnded">
         <h1>Логическая игра "Пятнашки"</h1>
         <p>
@@ -12,12 +11,12 @@
         <p>
           <strong>Цель игры:</strong> упорядочить костяшки по возрастанию, начиная с левого верхнего угла.
         </p>
-        <button class="start-button btn btn-primary" @click="startGame">Начать игру</button>
+        <button class="start-button" @click="startGame">Начать игру</button>
       </div>
 
       <div v-else-if="gameStarted">
-        <p>Прошедшее время: {{ time }}</p>
-        <p>Ходы: {{ moves }}</p>
+        Прошедшее время: {{ time }}
+        <br>Ходы: {{ moves }}
         <div class="game-board grid">
           <button
             v-for="(tile, index) in tiles"
@@ -33,14 +32,14 @@
 
       <div v-if="gameEnded" class="end-message">
         <h3>Игра завершена!</h3>
-        <p>{{ endMessage }}</p>
-        <p>Правильно расположенных плиток: {{ number_correct_answers }} из {{ number_all_answers }}</p>
-        <p>Количество ходов: {{ moves }}</p>
-        <p>Время прохождения: {{ time }}</p>
-        <p>Точность: {{ accuracy }}%</p>
+        {{ endMessage }} <br>
+        <strong>Правильно расположенных плиток:</strong> {{ number_correct_answers }} из {{ number_all_answers }}<br>
+        <strong>Количество ходов: </strong> {{ moves }}<br>
+        <strong>Время прохождения:</strong> {{ time }}<br>
+        <strong>Точность:</strong> {{ accuracy }}%<br>
         <p>{{ motivationalMessage }}</p>
       </div>
-      <router-link to="/tests" class="btn btn-secondary">Назад к тестам</router-link>
+      <router-link to="/tests" class="btn btn-secondary">Назад к тестам</router-link> <br>
     </div>
   </div>
 </template>
@@ -146,11 +145,6 @@ export default {
       return this.tiles.filter((tile, i) => tile === correctOrder[i]).length;
     },
     async saveResults() {
-      if (!this.authStore.user) {
-        alert("Пользователь не авторизован. Пожалуйста, войдите в систему.");
-        return;
-      }
-
       const testId = 10;
       const payload = {
         test: testId,
@@ -165,7 +159,7 @@ export default {
       console.log("Отправляемые данные:", payload);
 
       try {
-        const response = await fetch("http://127.0.0.1:8000/api/result/", {
+        const response = await fetch("https://svetasy.pythonanywhere.com/api/result/", {
           method: "POST",
           headers: {
             "Content-Type": "application/json",

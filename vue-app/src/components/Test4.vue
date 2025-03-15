@@ -1,32 +1,30 @@
 <template>
   <Navbar />
   <div class="container mt-5 text-center">
-    <!-- Экран с правилами -->
     <div v-if="rulesScreen">
-      <h2>Тест на память</h2>
+      <h1>Тест на память: Найди смайлики</h1>
       <p>
         <strong>Цель игры:</strong> Нажмите "Начать игру", чтобы увидеть сетку закрытых карточек. Кликайте по ним, чтобы открывать смайлики.
       </p>
       <p>
         Если изображения совпадают, карточки остаются открытыми, если нет – они закроются через секунду. Игра продолжается, пока не будут найдены все пары.
       </p>
-      <button class="btn btn-primary mt-4" @click="startGameFromRules">Начать игру</button>
+      <button @click="startGameFromRules">Начать игру</button>
     </div>
 
-    <!-- Игровой экран -->
     <div v-else>
-      <h2>Найди пары смайлов!</h2>
+      <h3>Найди пары смайлов!</h3>
       <div class="row mt-4">
         <div
           v-for="(emoji, index) in shuffledEmojis"
           :key="index"
-          class="col-2 card m-2 p-4 bg-light text-center mr-2"
+          class="col-3 card ml-3 p-4 bg-light text-center mr-2"
           @click="flipCard(index)"
         >
           <span class="emoji" style="font-size: 2em">{{ cardStates[index] }}</span>
         </div>
       </div>
-      <button class="btn btn-primary mt-4" @click="startGame">Начать заново</button>
+      <button @click="startGame">Начать заново</button>
 
       <div v-if="gameEnded" class="end-message mt-4">
         <h3>Игра завершена!</h3>
@@ -60,13 +58,13 @@ export default {
       lockBoard: false,
       matchedCards: 0,
       authStore: useAuthStore(),
-      number_all_answers: 10, // Количество пар
+      number_all_answers: 10, 
       number_correct_answers: 0,
       gameEnded: false,
       startTime: null,
       elapsedTime: 0,
       timer: null,
-      rulesScreen: true, // Новое состояние для экрана правил
+      rulesScreen: true, 
     };
   },
   computed: {
@@ -103,7 +101,7 @@ export default {
     },
     disableCards() {
       this.matchedCards += 2;
-      this.number_correct_answers += 1; // Увеличиваем счетчик правильных ответов на 1 за пару
+      this.number_correct_answers += 1; 
       this.resetBoard();
       if (this.matchedCards === this.emojis.length) {
         this.gameEnded = true;
@@ -124,7 +122,7 @@ export default {
       this.lockBoard = false;
     },
     startGame() {
-      if (this.timer) clearInterval(this.timer); // Очистка старого таймера
+      if (this.timer) clearInterval(this.timer); 
       this.matchedCards = 0;
       this.cardStates = Array(this.emojis.length).fill("?");
       this.shuffledEmojis = this.shuffle([...this.emojis]);
@@ -137,16 +135,12 @@ export default {
       }, 1000);
     },
     startGameFromRules() {
-      this.rulesScreen = false; // Переход с экрана правил на игровой экран
-      this.startGame(); // Запуск игры
+      this.rulesScreen = false; 
+      this.startGame(); 
     },
     async saveResults() {
-      if (!this.authStore.user) {
-        alert("Пользователь не авторизован. Войдите в систему.");
-        return;
-      }
       try {
-        const response = await fetch("http://127.0.0.1:8000/api/result/", {
+        const response = await fetch("https://svetasy.pythonanywhere.com/api/result/", {
           method: "POST",
           headers: {
             "Content-Type": "application/json",
@@ -183,4 +177,5 @@ export default {
 .end-message {
   margin-top: 20px;
 }
+
 </style>

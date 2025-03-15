@@ -6,11 +6,17 @@
       <div v-if="!testStarted && !testFinished">
         <p><strong>"Тест на внимательность"</strong> — это игра для развития концентрации и зрительной памяти.</p>
         <p><strong>Цель игры:</strong> Найти 5 заданных чисел среди 48 плиток как можно быстрее. Сначала выберите число из 5 загаданных и потом выберите его среди 48 плиток, таким образом соберите все 5 пар чисел (загаданное и найденное)</p>
-        <button class="btn btn-primary btn-lg" @click="startTest">Начать тест</button>
+        <button @click="startTest">Начать тест</button>
       </div>
 
       <div v-else-if="testStarted">
         <p class="h5">Оставшееся время: {{ formattedTime }}</p>
+        <div v-if="testFinished">
+        <h3 class="display-5">Тест завершен!</h3>
+        <p>⏳ Время выполнения: {{ formattedTimeSpent }}</p>
+        <p>✅ Правильные ответы: {{ number_correct_answers }} из {{ number_all_answers }}</p>
+        <p>🎯 Точность: {{ accuracy }}%</p>
+      </div>
         <div class="row mb-4">
           <div
             v-for="(num, index) in targetNumbers"
@@ -33,14 +39,7 @@
             {{ num }}
           </div>
         </div>
-        <button v-if="errors < 5" class="btn btn-warning" @click="finishTestEarly">Завершить тест</button>
-      </div>
-
-      <div v-if="testFinished">
-        <h3 class="display-5">Тест завершен!</h3>
-        <p>⏳ Время выполнения: {{ formattedTimeSpent }}</p>
-        <p>✅ Правильные ответы: {{ number_correct_answers }} из {{ number_all_answers }}</p>
-        <p>🎯 Точность: {{ accuracy }}%</p>
+        <button v-if="errors < 5" @click="finishTestEarly">Завершить тест</button>
       </div>
     </div>
     <router-link to="/tests" class="btn btn-secondary">Назад к тестам</router-link>
@@ -181,10 +180,6 @@ export default {
       this.saveResults();
     },
     async saveResults() {
-      if (!this.authStore.user) {
-        alert("Пользователь не авторизован. Войдите в систему.");
-        return;
-      }
       try {
         const response = await fetch("https://svetasy.pythonanywhere.com/api/result/", {
           method: "POST",

@@ -3,11 +3,12 @@
     <div class="container mt-5 text-center">
         <div class="game-container sequence-test-container">
             <div v-if="!gameStarted && !gameEnded">
+            <h1>Тест Числовых Последовательностей</h1>
                 <h2>{{ $route.params.name }}</h2>
                 <p><strong>Игра:</strong> "Тест Числовых Последовательностей" — это когнитивный тест, направленный на развитие логического мышления, аналитических способностей и умения выявлять закономерности.</p>
                 <p><strong>Цель игры:</strong> Определить недостающее число в числовой последовательности, выбрав правильный вариант среди предложенных ответов.</p>
                 <p>Нажмите "Начать тест", чтобы приступить к решению задач. На экране появится числовая последовательность с пропущенным элементом. Вам необходимо проанализировать закономерность и выбрать верный ответ из предложенных вариантов.</p>
-                <button class="start-button btn btn-primary" @click="startGame">Начать тест</button>
+                <button class="start-button" @click="startGame">Начать тест</button>
             </div>
   
             <div v-else-if="gameStarted">
@@ -24,7 +25,7 @@
                         :key="index"
                         @click="handleAnswer(option)"
                         :disabled="answered"
-                        class="answer-button btn btn-outline-primary mx-1"
+                        class="answer-button mx-1"
                     >
                         {{ option }}
                     </button>
@@ -40,7 +41,7 @@
                 <p class="final-message">{{ finalMessage }}</p>
                 <p><strong>Попробуйте улучшить свой результат, анализируя числа быстрее и точнее!</strong></p>
             </div>
-            <router-link to="/tests" class="btn btn-secondary">Назад к тестам</router-link>
+            <br><router-link to="/tests" class="btn btn-secondary">Назад к тестам</router-link>
         </div>
     </div>
   </template>
@@ -142,11 +143,6 @@ export default {
       },
 
       async saveResults() {
-          if (!this.authStore.user) {
-              alert("Пользователь не авторизован.");
-              return;
-          }
-
           const testId = 8;
           const payload = {
               test: testId,
@@ -161,7 +157,7 @@ export default {
           console.log("Отправляемые данные:", payload);
 
           try {
-              const response = await fetch("http://127.0.0.1:8000/api/result/", {
+              const response = await fetch("https://svetasy.pythonanywhere.com/api/result/", {
                   method: "POST",
                   headers: {
                       "Content-Type": "application/json",

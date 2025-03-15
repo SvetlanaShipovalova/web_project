@@ -4,19 +4,19 @@
       <h2>{{ $route.params.name }}</h2>
       <div id="app">
         <div v-if="!gameStarted && !gameEnded">
-          <h1>Игра "Сравнение объектов"</h1>
+          <h1>Тест: Сравнение объектов</h1>
           <p><strong>Игра:</strong> "Сравнение объектов" — это когнитивная игра для тренировки внимания, концентрации и способности к быстрому анализу визуальной информации.</p>
           <p><strong>Цель игры:</strong> сравнить два изображения и определить, совпадают ли они.</p>
           <p>Нажмите "Начать игру", после чего на экране появится два набора изображений. Ваша задача — внимательно сравнить их и выбрать правильный ответ, нажав "Да", если изображения идентичны, или "Нет", если они различаются. За каждую ошибку теряется одна жизнь. Время выполнения теста 30 секунд.</p>
-          <button class="start-button btn btn-primary" @click="startGame">Начать игру</button>
+          <button class="start-button" @click="startGame">Начать игру</button>
         </div>
 
         <div v-else-if="gameStarted">
-          <p>Оставшееся время: {{ formattedTime }}</p>
-          <p>Жизни: {{ lives }}</p>
-          <p>Раунд: {{ number_all_answers }}</p>
-          <p>Правильные ответы: {{ number_correct_answers }} / {{ number_all_answers }}</p>
-
+          <text>Оставшееся время: {{ formattedTime }}</text> <br>
+          <text>Жизни: {{ lives }}</text> <br>
+          <text>Раунд: {{ number_all_answers }}</text> <br>
+          <text>Правильные ответы: {{ number_correct_answers }} / {{ number_all_answers }}</text>
+          <p class="instruction mt-2"><strong>Совпадают ли изображения?</strong></p>
           <div class="game-area d-flex justify-content-center">
             <div class="image-container border p-3 mx-2">
               <div v-for="(symbol, index) in leftImage" :key="'left-' + index" class="symbol">
@@ -29,24 +29,21 @@
               </div>
             </div>
           </div>
-          <h4 class="instruction">Совпадают ли изображения?</h4>
           <div class="choices d-flex justify-content-center">
             <button class="choice-button btn btn-danger mx-2" @click="handleAnswer(false)">Нет</button>
             <button class="choice-button btn btn-success mx-2" @click="handleAnswer(true)">Да</button>
           </div>
           <p class="message" :class="{ correct: isCorrect, incorrect: !isCorrect }">{{ message }}</p>
         </div>
-
         <div v-if="gameEnded" class="end-message">
           <h3>Игра завершена!</h3>
-          <p>Правильные ответы: {{ number_correct_answers }} из {{ number_all_answers }}</p>
-          <p>Точность: {{ accuracy }}%</p>
-          <p>Время выполнения: {{ time }}</p>
-          <p><strong>Совет:</strong> Постарайтесь улучшить свою скорость и точность, тренируя внимательность и концентрацию.</p>
+          <text>Правильные ответы: {{ number_correct_answers }} из {{ number_all_answers }}</text> <br>
+          <text>Точность: {{ accuracy }}%</text> <br>
+          <text>Время выполнения: {{ time }}</text> <br>
+          <text>Совет: Постарайтесь улучшить свою скорость и точность, тренируя внимательность и концентрацию.</text>
         </div>
-
-        <router-link to="/tests" class="btn btn-secondary">Назад к тестам</router-link>
       </div>
+      <br><router-link to="/tests" class="btn btn-secondary">Назад к тестам</router-link>
     </div>
 </template>
 
@@ -75,8 +72,8 @@ export default {
             imagesMatch: false,
             message: "",
             isCorrect: null,
-            number_all_answers: 0, // Количество всех вопросов (всего раундов)
-            number_correct_answers: 0, // Количество правильных ответов
+            number_all_answers: 0, 
+            number_correct_answers: 0, 
             startTime: null,
             time: "00:00:00",
             symbols: ["🔲", "⚫", "⬛", "▷", "▼", "▲", "▽", "🔘"],
@@ -133,7 +130,7 @@ export default {
 
             this.leftImage = leftImage;
             this.rightImage = rightImage;
-            this.number_all_answers++; // Увеличиваем счетчик всех вопросов
+            this.number_all_answers++; 
         },
         handleAnswer(answer) {
             if (this.gameEnded) return;
@@ -141,7 +138,7 @@ export default {
             if (answer === this.imagesMatch) {
                 this.message = "Правильно!";
                 this.isCorrect = true;
-                this.number_correct_answers++; // Увеличиваем количество правильных ответов
+                this.number_correct_answers++; 
             } else {
                 this.message = "Неправильно!";
                 this.isCorrect = false;
@@ -177,16 +174,11 @@ export default {
             return `${hours}:${minutes}:${sec}`;
         },
         async saveResults() {
-            if (!this.authStore.user) {
-                alert("Пользователь не авторизован. Пожалуйста, войдите в систему.");
-                return;
-            }
-
             const testId = 6;
             const scorePercentage = this.accuracy;
 
             try {
-                const response = await fetch("http://127.0.0.1:8000/api/result/", {
+                const response = await fetch("https://svetasy.pythonanywhere.com/api/result/", {
                     method: "POST",
                     headers: {
                         "Content-Type": "application/json",

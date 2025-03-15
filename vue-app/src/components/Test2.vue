@@ -5,7 +5,7 @@
     <div id="app">
       <div v-if="currentView === 'start'">
         <h1>Тест числового охвата</h1>
-        <p><strong>Игра:</strong> Тест таблицы Шульте помогает развивать внимание, концентрацию и скорость обработки визуальной информации.</p>
+        <p><strong>Игра:</strong> Тест числового охвата помогает развивать внимание, концентрацию и скорость обработки визуальной информации.</p>
         <p><strong>Цель игры:</strong> Число отображается на экране в течение 3 секунд, затем исчезает. Ваша задача — запомнить показанное число и затем выбрать его на экране. Если число двузначное, необходимо нажимать цифры последовательно.</p>
         <button id="start-button" @click="startTest">Начать тест</button>
       </div>
@@ -16,7 +16,7 @@
         <p>Загаданное число исчезнет через: {{ remainingTime }} сек</p>
 
         <div class="digit-to-remember">
-          <h2 v-if="showDigit">{{ currentDigit }}</h2>
+          <button v-if="showDigit"> <h1><strong>{{ currentDigit }}</strong></h1></button>
         </div>
 
         <div class="buttons" v-if="!showDigit">
@@ -61,8 +61,8 @@ export default {
       showDigit: false,
       userInput: "",
       totalTime: 0,
-      number_all_answers: 7,    // Всего раундов/вопросов
-      number_correct_answers: 0 // Счётчик правильных ответов
+      number_all_answers: 7,    
+      number_correct_answers: 0 
     };
   },
   computed: {
@@ -89,10 +89,9 @@ export default {
     },
 
     startRound() {
-      // Генерация числа в зависимости от раунда
       this.currentDigit = this.round > 4
-        ? Math.floor(Math.random() * 90) + 10 // Двузначные для раундов 5-7
-        : Math.floor(Math.random() * 10);     // Однозначные для раундов 1-4
+        ? Math.floor(Math.random() * 90) + 10 
+        : Math.floor(Math.random() * 10);    
 
       this.showDigit = true;
       this.userInput = "";
@@ -113,7 +112,6 @@ export default {
 
       this.userInput += number.toString();
 
-      // Проверка завершённости ввода
       const requiredLength = this.round > 4 ? 2 : 1;
       if (this.userInput.length === requiredLength) {
         const userAnswer = parseInt(this.userInput);
@@ -125,7 +123,6 @@ export default {
     },
 
     endRound() {
-      // Добавляем время раунда к общему времени
       this.totalTime += (3 - this.remainingTime);
 
       if (this.round < 7) {
@@ -149,11 +146,6 @@ export default {
     },
 
     async saveResults() {
-      if (!this.authStore.user) {
-        alert("Для сохранения результатов необходимо авторизоваться");
-        return;
-      }
-
       try {
         const payload = {
           test: 2,
@@ -166,7 +158,7 @@ export default {
 
         console.log('Saving results:', payload);
 
-        const response = await fetch("/api/result/", {
+        const response = await fetch("https://svetasy.pythonanywhere.com/api/result/", {
           method: "POST",
           headers: {
             "Content-Type": "application/json",
@@ -212,10 +204,13 @@ export default {
   max-width: 300px;
   margin: 0 auto;
 }
-
-button {
-  padding: 20px;
-  font-size: 1.5rem;
-  cursor: pointer;
+.buttons button:active {
+  background-color: rgb(248, 91, 104); 
+  color: white; 
+}
+.digit-to-remember button {
+    background-color:rgb(218, 231, 255);
+    padding: 20px;
+    color: rgb(248, 91, 104);
 }
 </style>

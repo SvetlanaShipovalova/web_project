@@ -4,8 +4,7 @@
     <h2>{{ $route.params.name }}</h2>
     <div id="app">
       <div v-if="currentView === 'start'">
-        <h1>Проверка на быстроту реакции и сообразительность</h1>
-        <h1>Проверка на быстроту реакции и сообразительность</h1>
+        <h3>Тест на быстроту реакции по поиску слов</h3>
         <p><strong>Игра:</strong> "Проверка на быстроту реакции и сообразительность" — это когнитивный тест, направленный на оценку скорости мышления и способности находить логические связи между словами.</p>
         <p><strong>Цель игры:</strong> Определить лишнее слово среди предложенных вариантов, выбирая его как можно быстрее. После нажатия кнопки «Начать тест» на экране появится несколько слов, одно из которых не подходит по смыслу к остальным. </p>
         <p>Ваша задача — нажать на это слово, стараясь не допускать ошибок. За каждую неверную попытку увеличивается счетчик ошибок, а время прохождения теста фиксируется для оценки скорости реакции.</p>
@@ -206,16 +205,11 @@ export default {
     },
 
     async saveResults() {
-      if (!this.authStore.user) {
-        alert("Пользователь не авторизован. Пожалуйста, войдите в систему.");
-        return;
-      }
-
       const testId = 3;
       const scorePercentage = parseFloat(this.accuracy);
 
       try {
-        const response = await fetch("http://127.0.0.1:8000/api/result/", {
+        const response = await fetch("https://svetasy.pythonanywhere.com/api/result/", {
           method: "POST",
           headers: {
             "Content-Type": "application/json",
@@ -256,7 +250,6 @@ export default {
 }
 
 .horizontal-options {
-  display: flex;
   justify-content: center;
   gap: 10px;
   margin: 20px 0;

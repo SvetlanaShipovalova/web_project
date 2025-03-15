@@ -6,7 +6,7 @@
       <div v-if="!testStarted && !testFinished">
         <h1>Тест на цветовую последовательность</h1>
         <p>Перетащите и отпустите ящики, чтобы расположить оттенки в правильной последовательности.</p>
-        <button class="start-button btn btn-primary" @click="startTest">Начать тест</button>
+        <button class="start-button" @click="startTest">Начать тест</button>
       </div>
       
       <div v-else-if="testStarted && !testFinished">
@@ -22,6 +22,9 @@
             @dragstart="dragStart(index)"
             @dragover.prevent
             @drop="drop(index)"
+            @touchstart="touchStart(index)"
+            @touchmove="touchMove"
+            @touchend="touchEnd"
           ></div>
           <div class="color-box fixed" :style="{ backgroundColor: rightColor }"></div>
         </div>
@@ -30,8 +33,8 @@
       
       <div v-if="testCompleted && !testFinished">
         <p>Вы правильно расположили {{ correctMovableColors }} из {{ movableColors.length }} оттенков!</p>
-        <button v-if="round < 7" class="btn btn-primary" @click="nextRound">Следующий раунд</button>
-        <button v-else class="btn btn-primary" @click="finishTest">Завершить тест</button>
+        <button v-if="round < 7" @click="nextRound">Следующий раунд</button>
+        <button v-else @click="finishTest">Завершить тест</button>
       </div>
       
       <div v-if="testFinished" class="end-message">
@@ -66,11 +69,12 @@ export default {
       testCompleted: false,
       testFinished: false,
       correctMovableColors: 0,
-      number_correct_answers: 0, // Количество правильных ответов
-      number_all_answers: 0, // Общее количество всех вопросов
+      number_correct_answers: 0,
+      number_all_answers: 0,
       startTime: 0,
       endTime: 0,
-      time: "00:00:00", // Время в формате ЧЧ:ММ:СС
+      time: "00:00:00",
+      touchStartIndex: null, 
     };
   },
   computed: {
@@ -104,7 +108,7 @@ export default {
         return `rgb(${r}, ${g}, ${b})`;
       });
       this.movableColors = [...this.originalMovableColors].sort(() => Math.random() - 0.5);
-      this.number_all_answers += count; // Учитываем все вопросы
+      this.number_all_answers += count; 
     },
     hexToRgb(hex) {
       const bigint = parseInt(hex.slice(1), 16);
@@ -124,16 +128,33 @@ export default {
       this.draggedIndex = index;
     },
     drop(index) {
-      const draggedColor = this.movableColors[this.draggedIndex];
-      this.movableColors.splice(this.draggedIndex, 1);
-      this.movableColors.splice(index, 0, draggedColor);
+      if (this.draggedIndex !== null) {
+        const draggedColor = this.movableColors[this.draggedIndex];
+        this.movableColors.splice(this.draggedIndex, 1);
+        this.movableColors.splice(index, 0, draggedColor);
+        this.draggedIndex = null; 
+      }
+    },
+    touchStart(index) {
+      this.touchStartIndex = index; 
+    },
+    touchMove(event) {
+      event.preventDefault(); 
+    },
+    touchEnd(index) {
+      if (this.touchStartIndex !== null && this.touchStartIndex !== index) {
+        const draggedColor = this.movableColors[this.touchStartIndex];
+        this.movableColors.splice(this.touchStartIndex, 1);
+        this.movableColors.splice(index, 0, draggedColor);
+      }
+      this.touchStartIndex = null; 
     },
     checkResult() {
       this.correctMovableColors = this.movableColors.reduce(
         (acc, color, index) => (color === this.originalMovableColors[index] ? acc + 1 : acc),
         0
       );
-      this.number_correct_answers += this.correctMovableColors; // Обновляем количество правильных ответов
+      this.number_correct_answers += this.correctMovableColors; 
       this.testCompleted = true;
     },
     nextRound() {
@@ -159,13 +180,8 @@ export default {
       this.generateColors();
     },
     async saveResults() {
-      if (!this.authStore.user) {
-        alert("Пользователь не авторизован.");
-        return;
-      }
-
       try {
-        const response = await fetch("http://127.0.0.1:8000/api/result/", {
+        const response = await fetch("https://svetasy.pythonanywhere.com/api/result/", {
           method: "POST",
           headers: {
             "Content-Type": "application/json",
@@ -184,11 +200,45 @@ export default {
         if (!response.ok) throw new Error("Ошибка при сохранении данных");
         alert("Результаты успешно сохранены!");
       } catch (error) {
-        console.error("Ошибка:", error);
+               console.error("Ошибка при сохранении данных:", error);
+        alert("Не удалось сохранить результаты. Пожалуйста, попробуйте еще раз.");
       }
     },
   },
 };
 </script>
 
-<style src="../assets/style.css"></style>
+<style>
+.container {
+  max-width: 600px;
+  margin: auto;
+}
+
+.color-container {
+  display: flex;
+  justify-content: space-between;
+  margin: 20px 0;
+}
+
+.color-box {
+  width: 60px;
+  height: 60px;
+  border: 1px solid #000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+}
+
+.fixed {
+  width: 80px; 
+  height: 80px;
+  border: 2px solid #000;
+}
+.start-button {
+  margin-top: 20px;
+}
+.end-message {
+  margin-top: 20px;
+}
+</style>
